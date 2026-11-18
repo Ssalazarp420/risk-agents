@@ -11,7 +11,11 @@ Mapa de los documentos del proyecto. Explican el problema, los datos, el diseño
 | [casos_de_fallo.md](casos_de_fallo.md) | Fallos reales del agente, el código, el proveedor o la evaluación: qué pasó, por qué y qué se hizo |
 | [bitacora.md](bitacora.md) | Qué se hizo cada día, qué se aprendió y qué falló |
 
-Los entregables de la prueba (system prompt, documento de arquitectura multiagente y README del prototipo) son archivos aparte; estos documentos son el material de trabajo que los respalda.
+Los entregables de la prueba son archivos aparte; estos documentos son el material de trabajo que los respalda:
+
+- **Parte 1, system prompt:** [`src/risk_agents/prompts/investigador_riesgo.md`](../src/risk_agents/prompts/investigador_riesgo.md). Es el prompt que usa el prototipo, no una copia.
+- **Parte 2, arquitectura multiagente:** pendiente.
+- **Parte 3, prototipo:** el [README](../README.md) del repositorio.
 
 ## Cómo reproducir las cifras
 
