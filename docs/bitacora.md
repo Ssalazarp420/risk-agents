@@ -116,3 +116,27 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 
 **Siguiente**
 - El bucle del agente: system prompt, herramientas, límite de pasos, salida estructurada, y el LLM simulado con reglas fijas para correr sin clave.
+
+## 2026-11-18 · Bucle del agente y system prompt
+
+**Hecho**
+- `prompts/investigador_riesgo.md`: el system prompt (Parte 1). Cubre:
+  - qué hace y qué no hace;
+  - qué recibe;
+  - cuándo usar cada herramienta;
+  - qué señales buscar;
+  - cómo elegir el nivel y la derivación;
+  - qué hacer con datos faltantes o inconsistentes;
+  - cómo tratar el texto de terceros.
+- `agent.py` ([D-013](decisiones.md#d-013)):
+  - `build_context` arma el contexto inicial del caso;
+  - `run_agent` es el bucle de herramientas que termina con `concluir`, validado con JSON Schema;
+  - límite de 10 llamadas al modelo; salida cortada o cualquier excepción dejan el caso `incompleto` sin detener la corrida;
+  - traza completa con tokens, costo y latencia.
+- `repository.py`: `score_history`, el score y sus factores por corte.
+- Pruebas con el LLM guionado sobre la base real: camino feliz, conclusión inválida corregida, recordatorio cuando el modelo responde con texto, error de herramienta, límite de pasos, salida cortada, fallo del proveedor, suma de costos, traza, y el contexto sin datos personales.
+- 146 pruebas. Las 9 mutaciones del bucle se detectan.
+
+**Siguiente**
+- El ensamblador (conclusión del agente + métricas + alertas del código → expediente validado), el LLM simulado con reglas fijas y el orquestador que escribe `expedientes.jsonl`.
+- La primera corrida real con Groq, cuando esté el `.env`.

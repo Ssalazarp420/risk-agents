@@ -89,6 +89,15 @@ class Repository:
         ).fetchone()
         return row[0] if row else None
 
+    def score_history(self, jugador_id: str, until: str) -> list[tuple[str, float, str, str]]:
+        """(fecha_corte, score, version_modelo, factores as JSON text) up to `until`, oldest
+        first."""
+        return self.conn.execute(
+            "SELECT fecha_corte, score, version_modelo, factores FROM scores_riesgo"
+            " WHERE jugador_id = ? AND fecha_corte <= ? ORDER BY fecha_corte",
+            (jugador_id, until),
+        ).fetchall()
+
     def scores_at_least(self, fecha_corte: str, min_score: float) -> list[tuple[str, float]]:
         """Players scored at or above min_score on that cutoff, highest first."""
         return self.conn.execute(

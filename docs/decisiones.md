@@ -201,3 +201,28 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 **Por qué.** Es el diseño más simple que cubre lo que pide el prototipo, y cada parte se puede probar sin red.
 
 **Costo de la decisión.** Si hubiera miles de casos, haría falta concurrencia con control de tasa (está en la propuesta de la Parte 2). El precio por token está copiado a mano de la página de Groq y hay que revisarlo si cambia.
+
+---
+
+## D-013
+
+**El agente concluye llamando a una herramienta `concluir`, validada con JSON Schema** · 2026-11-18 · Vigente
+
+**Contexto.** El expediente tiene que cumplir un esquema estricto, y la mitad de sus campos los pone el código (ids, estado, métricas). Del modelo solo se necesita el juicio: hallazgos, nivel, derivación, resumen, cuentas relacionadas y alertas.
+
+**Opción elegida.**
+- **Conclusión como herramienta.** El modelo termina llamando a `concluir`. Sus parámetros son un JSON Schema con solo los campos que le tocan. El esquema es más estricto que el oficial en lo que importa: entre 1 y 5 hallazgos con evidencia no vacía, un nivel obligatorio (`null` no se permite) y un resumen de 1 a 800 caracteres.
+- **Una conclusión inválida vuelve al modelo** con los errores, como cualquier herramienta mal llamada. Gasta un paso, no el caso.
+- **El prompt de la Parte 1 es el archivo que usa el código** (`prompts/investigador_riesgo.md`), no una copia en un documento: lo que se entrega es lo que se probó.
+- **Límite de 10 llamadas al modelo** por caso. Las herramientas se pueden pedir varias a la vez, y el prompt pide de 4 a 7, así que queda margen para una o dos correcciones.
+- **Toda excepción deja el caso `incompleto`** con el tipo y el mensaje en el resultado y en la traza. La corrida sigue con el siguiente caso.
+
+**Por qué.**
+- Con herramientas, el formato de salida usa el mismo mecanismo que el resto del bucle: un solo camino, validado igual y que se prueba igual.
+- Combinar herramientas con el modo de salida estructurada (`response_format`) en la misma conversación depende del proveedor; la herramienta funciona en cualquier API compatible con OpenAI.
+
+**Alternativas descartadas.**
+- **Pedir JSON en el texto final y parsearlo:** más frágil (texto alrededor, comillas) y sin validación del lado del proveedor.
+- **Que el modelo escriba el expediente completo:** podría alterar las métricas o los ids, que ya son correctos.
+
+**Costo de la decisión.** Si el modelo nunca llama a `concluir`, el caso queda `incompleto` al llegar al límite. Se mide en la evaluación.

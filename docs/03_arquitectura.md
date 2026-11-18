@@ -93,12 +93,14 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 
 ### 3.5 Agente investigador
 
-- **Qué es.** Un LLM en un **bucle de herramientas**: recibe el system prompt (Parte 1) y el contexto del caso, pide herramientas, lee los resultados y repite hasta concluir.
+- **Qué es.** Un LLM en un **bucle de herramientas** (`src/risk_agents/agent.py`): recibe el system prompt (Parte 1, en [`src/risk_agents/prompts/investigador_riesgo.md`](../src/risk_agents/prompts/investigador_riesgo.md)) y el contexto del caso, pide herramientas, lee los resultados y repite hasta concluir ([D-013](decisiones.md#d-013)).
 - **Para qué sirve.** Es la parte que reemplaza el criterio del analista: decidir qué mirar, conectar las señales y explicar.
 - **Cómo se usa aquí.**
-  - Recibe de entrada lo que ya calculó el código: perfil (sin datos personales), score y factores de los dos cortes, las métricas de 90 días y las alertas de la prevalidación. Así no gasta llamadas en lo obvio.
-  - Tiene un **límite de pasos** (por ejemplo, 8 llamadas a herramientas). Si lo alcanza sin concluir, el caso queda `incompleto`.
-  - Termina con una **salida estructurada** que solo contiene lo que le toca: `hallazgos`, `nivel_preocupacion`, `derivar_a`, `resumen`, `cuentas_relacionadas` confirmadas y alertas adicionales.
+  - **Contexto inicial armado por el código** (`build_context`): ids del caso y ventana, perfil sin datos personales, score con sus factores en este corte y en el anterior, las métricas de 90 días y las alertas de la prevalidación. Así el modelo no gasta pasos en lo obvio.
+  - **Conclusión como llamada a herramienta.** El modelo termina llamando a `concluir`, cuyos parámetros son un JSON Schema con los campos que le tocan: `hallazgos` (1 a 5, con evidencia), `nivel_preocupacion`, `derivar_a`, `resumen` (máximo 800), `cuentas_relacionadas` y `alertas_calidad_datos`. Si la conclusión no cumple el esquema, vuelve al modelo con los errores, igual que una herramienta mal llamada.
+  - **Si responde con texto** en vez de llamar a `concluir`, recibe un recordatorio.
+  - **Límites.** Máximo 10 llamadas al modelo por caso. Si las agota, si la salida se corta por el tope de tokens o si ocurre cualquier excepción (el proveedor falla después de los reintentos, o un defecto del código), el caso queda `incompleto` con el motivo. Un caso nunca detiene la corrida.
+  - **Resultado** (`AgentResult`): estado, conclusión, las cuentas que `cuentas_relacionadas` realmente devolvió (para que el ensamblador descarte cuentas inventadas), pasos, tokens, costo y la traza completa: cada llamada al modelo con tokens, costo y latencia, y cada herramienta con sus argumentos y su resultado.
 
 ### 3.6 Ensamblador y validación
 
