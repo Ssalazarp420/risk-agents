@@ -78,3 +78,22 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 
 **Siguiente**
 - Las herramientas del agente (resúmenes de transacciones, apuestas, bonos y cuentas relacionadas), con salida acotada y sin datos personales.
+
+## 2026-11-18 · Herramientas del agente
+
+**Hecho**
+- `tools.py`: las cinco herramientas del agente y sus definiciones en formato de función de OpenAI ([D-011](decisiones.md#d-011)). Ventana fija tomada del caso, alcance limitado al jugador y a las cuentas que se van descubriendo, salida acotada, sin datos personales y con errores que el modelo puede corregir.
+- `untrusted.py`: aviso de texto de terceros y marca heurística `parece_instruccion`, que no confunde ninguna de las seis notas operativas reales con una instrucción.
+- `repository.py`: las consultas detrás de las herramientas, todas parametrizadas y limitadas por la ventana o por el corte.
+- Sobre los datos reales:
+  - `cuentas_relacionadas` del caso 016 devuelve el anillo completo (J101084, que está en el CSV, y J100146 y J100563, que no) por el dispositivo `D-88436f9197`.
+  - En el caso 011 la nota con la inyección llega marcada.
+  - En el caso 025 el resumen de las 49.196 apuestas cabe en menos de 3.000 caracteres y muestra 0 apuestas de madrugada, lo que contradice el factor `actividad_nocturna`.
+- 107 pruebas.
+
+**Aprendido**
+- La prueba contra los 25 casos reales encontró un `TypeError`: la cuota de casino es nula, y la base de prueba no lo reflejaba ([caso de fallo 1](casos_de_fallo.md#1-la-cuota-de-casino-es-nula-y-el-resumen-de-apuestas-se-caía)).
+- 3 de 8 mutaciones no se detectaban, entre ellas una consulta de notas que ignoraba la ventana. Se agregaron las pruebas y ahora las 8 se detectan ([caso de fallo 2](casos_de_fallo.md#2-pruebas-en-verde-que-no-detectaban-errores)).
+
+**Siguiente**
+- El cliente del LLM (Groq) y el LLM simulado, y después el bucle del agente con límite de pasos.

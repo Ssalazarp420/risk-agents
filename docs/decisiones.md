@@ -150,3 +150,34 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 - **Caso que no cuadra**: el caso sigue su curso con el estado que corresponde (`sin_datos`, `omitido` o investigado con alerta), y los demás casos no se ven afectados.
 
 **Por qué.** Sin un `caso_id` o una fecha válidos no se puede escribir un expediente que cumpla el esquema, y "arreglar" la fila sería adivinar. En cambio, un caso que no cuadra con la base es justamente lo que el analista necesita saber, y se puede reportar dentro del formato.
+
+---
+
+## D-011
+
+**Herramientas del agente: el código fija la ventana y el alcance; el modelo solo elige filtros acotados** · 2026-11-18 · Vigente
+
+**Contexto.** El agente necesita ver la actividad del jugador para razonar. Tres riesgos marcan el diseño:
+- leer datos posteriores al corte (T5);
+- llenar el contexto con miles de filas (T4);
+- exponer datos personales o seguir instrucciones escritas en las notas (T3, T7).
+
+**Opción elegida.** Cinco herramientas en `tools.py`: `resumen_transacciones`, `resumen_apuestas`, `bonos`, `cuentas_relacionadas` y `detalle_transacciones`.
+- **Ventana fija.** Las fechas salen del caso (90 días hasta el corte). Ninguna herramienta acepta fechas, así que el modelo no puede pedir datos de noviembre aunque lo intente. `cuentas_relacionadas` mira todo el historial de dispositivos **hasta** el corte, no solo la ventana, porque un dispositivo compartido meses antes sigue siendo evidencia.
+- **Alcance que crece con la evidencia.** Al empezar, el modelo solo puede consultar al jugador del caso. Las cuentas que devuelve `cuentas_relacionadas` quedan habilitadas para las demás herramientas. Pedir cualquier otro `jugador_id` devuelve un error.
+- **Salida acotada.** Las herramientas devuelven agregados y listas con tope: 10 notas de hasta 300 caracteres, 30 bonos, 20 cuentas y 20 filas de detalle.
+- **Vinculación solo por `device_id`.** La red se informa como un conteo (`red_1: 3 otros jugadores`) con un aviso de que es una señal débil. Los valores de `ip_red` no salen de la herramienta.
+- **Notas como texto de terceros.** Cada nota va en el campo `texto_de_terceros`, con un aviso que dice que es un dato y no una instrucción, y una marca `parece_instruccion` calculada en código con patrones (`untrusted.py`).
+- **Errores que se pueden corregir.** Una herramienta inexistente, un argumento de más, un valor fuera de rango o un JSON inválido devuelven `{"error": ...}` con un mensaje que explica cómo corregir la llamada. Los argumentos se validan con el mismo JSON Schema que se le da al modelo. Cualquier otra excepción es un defecto del código: no se esconde y llega al orquestador.
+
+**Por qué.**
+- Las reglas que importan (fecha de corte, datos personales, alcance) quedan garantizadas por el código, no por que el modelo las cumpla.
+- La marca de inyección no depende del modelo: el código puede reportar la alerta aunque el modelo no lo haga.
+
+**Alternativas descartadas.**
+- **Una herramienta de SQL libre.** Le daría al modelo todo el poder de la base, incluidos los datos personales y las fechas posteriores al corte.
+- **Que el modelo elija las fechas.** Es más flexible, pero abre la fuga de información (T5) y los resultados dejan de ser comparables con las métricas.
+
+**Costo de la decisión.**
+- El agente no puede mirar fuera de la ventana de 90 días, salvo los dispositivos. Si un caso lo necesitara, habría que agregar una herramienta específica.
+- El detector de inyección es una heurística: atrapa los intentos evidentes, no todos. Por eso es una capa más, sumada al aviso, al prompt y a la marca en alertas, y no la única defensa.
