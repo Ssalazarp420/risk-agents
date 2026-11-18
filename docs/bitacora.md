@@ -59,5 +59,22 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 **Aprendido**
 - El redondeo del GGR importa: redondear cada lado antes de restar desvía el caso 020 en un centavo. La referencia del analista confirma que se redondea la diferencia.
 
+## 2026-11-18 · Prevalidación y expedientes decididos en código
+
+**Hecho**
+- Repo privado en GitHub (`risk-agents`) con `main` y `develop`.
+- `cases.py`: carga `casos_del_dia.csv` con tipos. Un archivo malformado se rechaza indicando la línea y el campo ([D-010](decisiones.md#d-010)).
+- `prevalidation.py`: decide cada caso antes de llamar al LLM.
+  - Jugador inexistente: `sin_datos`. La alerta distingue "no aparece en ninguna tabla" de "tiene filas sin titular registrado".
+  - Mismo jugador y mismo corte: `omitido`, apuntando al primer caso.
+  - Score distinto del de `scores_riesgo`, o ausente: se investiga con una alerta.
+  - A nivel de lote, jugadores con score en el rango de los casos que faltan en el CSV, y `caso_id` repetidos.
+- `case_file.py`: arma los expedientes `sin_datos` y `omitido` y valida cualquier expediente contra el esquema oficial, **incluido el formato de fecha**. Por defecto `jsonschema` no revisa `format`; hay que pasarle un `format_checker`.
+- Sobre los datos reales: 004 queda `sin_datos`, 018 queda `omitido` (apunta al 014), los otros 23 van al agente sin alertas, y el lote reporta a J100146 y J100563.
+- 66 pruebas.
+
+**Aprendido**
+- La comprobación con mutaciones encontró un hueco: cambiar `score >= umbral` por `score > umbral` no hacía fallar ninguna prueba, porque ningún jugador ausente estaba exactamente en el umbral. Se agregó esa prueba de borde y ahora el cambio se detecta.
+
 **Siguiente**
-- La prevalidación de los casos del día (jugador inexistente, duplicado, score que no cuadra, jugadores que faltan en el CSV).
+- Las herramientas del agente (resúmenes de transacciones, apuestas, bonos y cuentas relacionadas), con salida acotada y sin datos personales.

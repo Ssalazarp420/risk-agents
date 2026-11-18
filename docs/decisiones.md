@@ -136,3 +136,17 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 **Por qué.** Son pocas líneas, sin dependencias extra para el revisor, y se puede leer y revisar completo. El enunciado dice que pesa más el diseño que el framework.
 
 **Costo de la decisión.** La reanudación y los reintentos hay que escribirlos a mano; para 25 casos basta con saltar los casos que ya están en el JSONL.
+
+---
+
+## D-010
+
+**Una fila malformada del CSV detiene la corrida; un caso con datos raros no** · 2026-11-18 · Vigente
+
+**Contexto.** Hay dos clases de problema en la entrada. Uno es que el archivo de casos no se pueda leer (falta una columna, un score no es un número, una fecha no es `AAAA-MM-DD`). El otro es que el archivo se lea bien pero un caso no cuadre con la base (jugador inexistente, duplicado, score distinto).
+
+**Opción elegida.**
+- **Archivo ilegible**: `CaseFileError` con la línea y el campo, y la corrida no empieza. No se gasta ningún token.
+- **Caso que no cuadra**: el caso sigue su curso con el estado que corresponde (`sin_datos`, `omitido` o investigado con alerta), y los demás casos no se ven afectados.
+
+**Por qué.** Sin un `caso_id` o una fecha válidos no se puede escribir un expediente que cumpla el esquema, y "arreglar" la fila sería adivinar. En cambio, un caso que no cuadra con la base es justamente lo que el analista necesita saber, y se puede reportar dentro del formato.
