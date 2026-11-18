@@ -1,3 +1,4 @@
+import socket
 import sqlite3
 from collections.abc import Callable
 from pathlib import Path
@@ -26,6 +27,18 @@ CREATE TABLE scores_riesgo (jugador_id TEXT, fecha_corte TEXT, score REAL,
     version_modelo TEXT, factores TEXT);
 CREATE TABLE tasas_cambio (moneda TEXT PRIMARY KEY, usd_por_unidad REAL);
 """
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """Tests never reach the network or spend money: any connection attempt fails loudly."""
+
+    def blocked(*args, **kwargs):
+        raise RuntimeError("network access is blocked in tests")
+
+    monkeypatch.setattr(socket, "getaddrinfo", blocked)
+    monkeypatch.setattr(socket, "create_connection", blocked)
+    monkeypatch.setattr(socket.socket, "connect", blocked)
 
 
 @pytest.fixture(scope="session")

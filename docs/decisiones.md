@@ -181,3 +181,23 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 **Costo de la decisión.**
 - El agente no puede mirar fuera de la ventana de 90 días, salvo los dispositivos. Si un caso lo necesitara, habría que agregar una herramienta específica.
 - El detector de inyección es una heurística: atrapa los intentos evidentes, no todos. Por eso es una capa más, sumada al aviso, al prompt y a la marca en alertas, y no la única defensa.
+
+---
+
+## D-012
+
+**Cliente del LLM síncrono, con tipos propios y reintentos del SDK** · 2026-11-18 · Vigente
+
+**Contexto.** El proyecto personal tiene un cliente asíncrono con soporte para varios proveedores, pensado para servicios A2A concurrentes. Aquí hay 25 casos, un proveedor y el límite de tasa del plan gratuito de Groq.
+
+**Opción elegida.**
+- **Síncrono.** Los casos se procesan en secuencia. Con el límite de tokens por minuto de Groq, procesarlos en paralelo no los terminaría antes; solo provocaría más errores 429.
+- **Tipos propios** (`LLMReply`, `ToolCall`, el protocolo `ChatModel`). El bucle del agente no ve los objetos del SDK, así que el LLM simulado es una clase de pocas líneas y cambiar de proveedor no toca el bucle.
+- **Reintentos del SDK** (`max_retries=4`). El SDK de `openai` ya reintenta 408, 409, 429 y 5xx con espera exponencial y respeta la cabecera `retry-after` hasta 2 minutos. Una prueba lo comprueba con un 429 seguido de un 200.
+- **Clave por variable de entorno**, cargada con `uv run --env-file .env`. No se agrega `python-dotenv` ni `pydantic-settings`.
+- **`reasoning_effort="medium"` y un tope de 4.096 tokens de salida.** `gpt-oss` razona antes de responder y esos tokens cuentan como salida. El tope limita el costo de una salida descontrolada; si se alcanza, `finish_reason` es `"length"` y el bucle lo tratará como fallo.
+- **Temperatura por defecto.** La variabilidad se mide en la evaluación (3 corridas) en vez de esconderla.
+
+**Por qué.** Es el diseño más simple que cubre lo que pide el prototipo, y cada parte se puede probar sin red.
+
+**Costo de la decisión.** Si hubiera miles de casos, haría falta concurrencia con control de tasa (está en la propuesta de la Parte 2). El precio por token está copiado a mano de la página de Groq y hay que revisarlo si cambia.

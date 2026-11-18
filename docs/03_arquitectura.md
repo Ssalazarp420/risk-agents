@@ -111,13 +111,15 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 
 ### 3.7 Cliente del LLM
 
-- **Qué es.** El adaptador al proveedor. Se reutiliza el del proyecto personal: SDK `openai` apuntando a la API compatible de **Groq**.
-- **Para qué sirve.** Un solo lugar para el modelo, las claves, los reintentos y el costo.
+- **Qué es.** El adaptador al proveedor, en `src/risk_agents/llm.py`: el SDK `openai` apuntando a la API compatible de **Groq**. Adapta el patrón del proyecto personal ([D-012](decisiones.md#d-012)).
+- **Para qué sirve.** Un solo lugar para el modelo, la clave, los reintentos y el costo.
 - **Cómo se usa aquí.**
-  - Modelo `openai/gpt-oss-120b` en Groq ([D-008](decisiones.md#d-008)).
-  - Cada llamada registra tokens, latencia y costo. Un modelo sin precio conocido tiene costo `None`, nunca 0.
-  - Reintentos con espera ante el error 429 (límite de tasa del plan gratuito).
-  - **LLM simulado**: una implementación con reglas fijas que no llama a la red. Sirve para las pruebas y para que el revisor pueda correr todo sin clave de API.
+  - Modelo `openai/gpt-oss-120b` en Groq ([D-008](decisiones.md#d-008)), con `reasoning_effort="medium"` y un tope de 4.096 tokens de salida (el razonamiento oculto cuenta como salida).
+  - Cada respuesta (`LLMReply`) trae texto, llamadas a herramientas, tokens, latencia, costo y motivo de fin. Un modelo sin precio conocido tiene costo `None`, nunca 0.
+  - Reintentos: los hace el SDK (hasta 4) ante 408, 409, 429 y 5xx, respetando la cabecera `retry-after` de Groq. Una clave inválida (401) falla de inmediato.
+  - La clave se lee de la variable `GROQ_API_KEY`; se carga con `uv run --env-file .env`. El código nunca abre `.env`.
+  - **LLM simulado** (`ScriptedLLM`): reproduce respuestas fijas en orden y registra lo que recibió. Lo usan las pruebas del agente. Una versión con reglas fijas, para correr todo sin clave, llega con el bucle del agente, porque depende del formato de la respuesta final.
+  - `scripts/probar_groq.py` hace una llamada real mínima, sin datos de casos, para comprobar la clave, el modelo y las herramientas.
 
 ### 3.8 Evaluación
 
