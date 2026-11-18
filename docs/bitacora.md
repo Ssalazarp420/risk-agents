@@ -43,3 +43,21 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 
 **Siguiente**
 - La capa de datos con TDD, empezando por reproducir las métricas de referencia como pruebas.
+
+## 2026-11-18 · Capa de datos
+
+**Hecho**
+- `risk_agents.data.rules`: ventana de 90 días, conversión a USD y las seis métricas del expediente, como funciones puras.
+- `risk_agents.data.repository`: conexión de **solo lectura** a SQLite, perfil del jugador **sin datos personales**, totales de la ventana y métricas en USD.
+- 38 pruebas escritas antes del código (TDD). Las más importantes reproducen al centavo las métricas de los 5 casos del analista sobre la base real. Una base mínima armada en cada prueba cubre cada regla a ambos lados del límite: bordes de la ventana, estados no aprobados, ajustes, datos posteriores al corte y bonos en cualquier estado.
+- Comprobado que las pruebas detectan errores: se introdujeron a propósito cuatro fallos (ventana de 91 días, quitar el filtro de `aprobada`, redondear el GGR por lado, no normalizar −0,0) y cada uno hizo fallar al menos una prueba.
+- Comportamientos explícitos ante datos que faltan:
+  - un jugador inexistente devuelve `None`, no métricas en cero;
+  - una moneda sin tasa lanza `UnknownCurrencyError`, no se adivina la tasa;
+  - una ruta de base inexistente lanza `FileNotFoundError` con la ruta. Con `mode=ro`, SQLite solo dice `unable to open database file`, sin nombrar el archivo; sin `mode=ro`, además, habría creado una base vacía en silencio (comprobado).
+
+**Aprendido**
+- El redondeo del GGR importa: redondear cada lado antes de restar desvía el caso 020 en un centavo. La referencia del analista confirma que se redondea la diferencia.
+
+**Siguiente**
+- La prevalidación de los casos del día (jugador inexistente, duplicado, score que no cuadra, jugadores que faltan en el CSV).
