@@ -74,17 +74,22 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 
 - **Qué es.** Funciones que el LLM puede pedir que se ejecuten (*tool calling*). El modelo no ejecuta nada: devuelve "quiero llamar a `resumen_apuestas` con estos argumentos", el código la ejecuta y le devuelve el resultado.
 - **Para qué sirve.** Que el agente busque la evidencia que necesita según el caso, en lugar de recibir todo de golpe.
-- **Cómo se usa aquí.** Herramientas propuestas (los nombres finales pueden cambiar al construir):
+- **Cómo se usa aquí.** Cinco herramientas en `src/risk_agents/tools.py` ([D-011](decisiones.md#d-011)):
 
   | Herramienta | Devuelve | Por qué así |
   |---|---|---|
-  | `resumen_transacciones` | Totales por tipo, estado y medio de pago; serie mensual; notas distintas, delimitadas como texto de terceros | Las notas son donde está la inyección (T3) |
-  | `resumen_apuestas` | Por producto y juego: cantidad, monto, cuota media, uso de bono; distribución por hora; días activos; máximo por día | Agregado: el caso 025 tiene 49.196 apuestas (T4) |
-  | `bonos` | Los bonos de la ventana con tipo, monto, fecha y estado | Son pocos por jugador |
-  | `cuentas_relacionadas` | Cuentas que comparten `device_id`, con registro, score y si están en el CSV; cuántos jugadores comparten su `ip_red` | `device_id` es fuerte; `ip_red` se informa como débil (T6). Detecta a los que faltan (T9) |
-  | `detalle_transacciones` | Una muestra acotada de transacciones (máximo N), filtrable por tipo y estado | Para ver la secuencia de un patrón (depósito → bono → retiro) |
+  | `resumen_transacciones` | Totales en USD por tipo y estado, por tipo y medio de pago, y por mes; notas distintas como `texto_de_terceros` con la marca `parece_instruccion` | Las notas son donde está la inyección (T3) |
+  | `resumen_apuestas` | Por producto y juego: cantidad, monto, ganancias, GGR, cuota media (nula en casino), uso de bono; apuestas por franja horaria; días activos; máximo diario | Agregado: el caso 025 tiene 49.196 apuestas (T4). La franja horaria permite contrastar el factor `actividad_nocturna` (T8) |
+  | `bonos` | Los bonos otorgados en la ventana (máximo 30) con tipo, monto en USD, fecha y estado | Son pocos por jugador |
+  | `cuentas_relacionadas` | Cuentas que comparten `device_id` hasta el corte, con registro, estado, score y si están en el CSV; por cada red, cuántos otros jugadores la usan, sin mostrar la ip | `device_id` es fuerte; la red es débil (T6). Detecta a los que faltan (T9) |
+  | `detalle_transacciones` | Transacciones en orden cronológico, filtrables por tipo y estado, máximo 20 | Para ver la secuencia de un patrón (depósito → bono → retiro) |
 
-  Reglas para todas las herramientas: solo lectura, siempre filtradas por el corte, sin datos personales, con salida de tamaño acotado y con errores legibles (si el modelo pide algo inválido, recibe un mensaje que le permite corregir la llamada).
+  Reglas comunes:
+  - **Solo lectura y ventana fija.** Las fechas salen del caso; ninguna herramienta acepta fechas.
+  - **Alcance.** Se puede consultar al jugador del caso y a las cuentas que devolvió `cuentas_relacionadas`; cualquier otro `jugador_id` da error.
+  - **Sin datos personales.** Ni nombre, documento, email, teléfono ni ip.
+  - **Salida acotada.** En los 25 casos, toda salida queda por debajo de 6.000 caracteres (prueba `test_every_tool_output_is_bounded_for_every_case`).
+  - **Errores legibles.** Una llamada inválida devuelve `{"error": ...}` con lo que hay que corregir. Los argumentos se validan con el mismo JSON Schema que recibe el modelo.
 
 ### 3.5 Agente investigador
 
