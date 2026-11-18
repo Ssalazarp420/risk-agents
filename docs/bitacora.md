@@ -97,3 +97,22 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 
 **Siguiente**
 - El cliente del LLM (Groq) y el LLM simulado, y después el bucle del agente con límite de pasos.
+
+## 2026-11-18 · Cliente del LLM
+
+**Hecho**
+- `llm.py`: cliente de Groq sobre el SDK `openai` ([D-012](decisiones.md#d-012)).
+  - Cada respuesta trae tokens, latencia, costo y motivo de fin.
+  - Los 429 se reintentan respetando `retry-after`; una clave inválida falla sin reintentar.
+  - Sin precio conocido, el costo es `None`.
+- `ScriptedLLM`: el LLM simulado de las pruebas. Reproduce respuestas en orden y guarda una copia de cada pedido.
+- `tests/conftest.py`: un fixture automático bloquea la red en todas las pruebas, así que la regla "pytest no hace llamadas de red" la garantiza el código.
+- `scripts/probar_groq.py`: una llamada real mínima, sin datos de casos.
+- 127 pruebas.
+
+**Aprendido**
+- El SDK de `openai` ya implementa los reintentos con espera y la cabecera `retry-after`; escribir un bucle propio habría duplicado lógica ya probada.
+- 6 mutaciones del cliente se detectan. Una mutación parcial de la guarda de red no se detectó porque la línea restante seguía bloqueando; quitar la guarda completa sí se detecta.
+
+**Siguiente**
+- El bucle del agente: system prompt, herramientas, límite de pasos, salida estructurada, y el LLM simulado con reglas fijas para correr sin clave.
