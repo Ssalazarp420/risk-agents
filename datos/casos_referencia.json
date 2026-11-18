@@ -1,0 +1,147 @@
+[
+  {
+    "caso_id": "C-20261101-020",
+    "jugador_id": "J101084",
+    "fecha_corte": "2026-10-31",
+    "estado_investigacion": "completo",
+    "metricas_90d_usd": {
+      "depositos_aprobados": 21.6,
+      "retiros_aprobados": 73.86,
+      "monto_apostado": 84.16,
+      "ggr": 18.39,
+      "bonos_otorgados": 43.2,
+      "n_apuestas": 40
+    },
+    "cuentas_relacionadas": [
+      "J100146",
+      "J100563",
+      "J101070"
+    ],
+    "hallazgos": [
+      {
+        "descripcion": "Comparte dispositivo y red con otras 3 cuentas creadas el mismo fin de semana",
+        "evidencia": "dispositivos: mismo device_id en las 4 cuentas"
+      },
+      {
+        "descripcion": "Dos ciclos de depósito mínimo, bono, apuestas de cuota baja con el bono y retiro a los 4-5 días",
+        "evidencia": "transacciones y bonos de septiembre y octubre"
+      }
+    ],
+    "nivel_preocupacion": "alto",
+    "derivar_a": [
+      "riesgo"
+    ],
+    "resumen": "Cuenta nueva que forma parte de un grupo de 4 cuentas con el mismo dispositivo. Repite el ciclo depósito mínimo, bono, apuestas de cuota baja y retiro. Patrón compatible con abuso de bonos en grupo; se sugiere revisar las 4 cuentas juntas.",
+    "alertas_calidad_datos": []
+  },
+  {
+    "caso_id": "C-20261101-009",
+    "jugador_id": "J101207",
+    "fecha_corte": "2026-10-31",
+    "estado_investigacion": "completo",
+    "metricas_90d_usd": {
+      "depositos_aprobados": 81835.91,
+      "retiros_aprobados": 49706.35,
+      "monto_apostado": 346099.88,
+      "ggr": 32407.54,
+      "bonos_otorgados": 540.7,
+      "n_apuestas": 406
+    },
+    "cuentas_relacionadas": [],
+    "hallazgos": [
+      {
+        "descripcion": "Cliente VIP desde 2023 con depósitos semanales grandes y estables",
+        "evidencia": "transacciones: un depósito por semana por transferencia"
+      },
+      {
+        "descripcion": "El GGR es positivo para la casa y no usa bonos salvo el cashback mensual",
+        "evidencia": "apuestas y bonos de la ventana"
+      }
+    ],
+    "nivel_preocupacion": "bajo",
+    "derivar_a": [],
+    "resumen": "El score alto se explica por el tamaño de los montos, no por un patrón de abuso. Comportamiento estable y consistente con un VIP de larga data. Probable falso positivo.",
+    "alertas_calidad_datos": []
+  },
+  {
+    "caso_id": "C-20261101-024",
+    "jugador_id": "J101722",
+    "fecha_corte": "2026-10-31",
+    "estado_investigacion": "completo",
+    "metricas_90d_usd": {
+      "depositos_aprobados": 752.72,
+      "retiros_aprobados": 916.96,
+      "monto_apostado": 2225.59,
+      "ggr": -229.27,
+      "bonos_otorgados": 0.0,
+      "n_apuestas": 80
+    },
+    "cuentas_relacionadas": [],
+    "hallazgos": [
+      {
+        "descripcion": "5 de 8 depósitos con tarjeta fueron revertidos por contracargo",
+        "evidencia": "transacciones: estado revertida, nota de contracargo"
+      },
+      {
+        "descripcion": "Retiró por transferencia antes de que llegaran los contracargos",
+        "evidencia": "transacciones: retiros de septiembre y octubre"
+      }
+    ],
+    "nivel_preocupacion": "alto",
+    "derivar_a": [
+      "riesgo"
+    ],
+    "resumen": "Cuenta de julio de 2026 que deposita con tarjeta, juega, retira por transferencia y después el banco revierte la mayoría de los depósitos. Patrón de fraude con contracargos.",
+    "alertas_calidad_datos": []
+  },
+  {
+    "caso_id": "C-20261101-007",
+    "jugador_id": "J102769",
+    "fecha_corte": "2026-10-31",
+    "estado_investigacion": "completo",
+    "metricas_90d_usd": {
+      "depositos_aprobados": 195.54,
+      "retiros_aprobados": 181.38,
+      "monto_apostado": 296.61,
+      "ggr": -19.78,
+      "bonos_otorgados": 36.68,
+      "n_apuestas": 23
+    },
+    "cuentas_relacionadas": [],
+    "hallazgos": [
+      {
+        "descripcion": "Actividad dentro de lo normal para su marca",
+        "evidencia": "transacciones y apuestas de la ventana"
+      }
+    ],
+    "nivel_preocupacion": "bajo",
+    "derivar_a": [],
+    "resumen": "No se encontró un patrón que explique el score. Actividad y montos dentro de lo esperado.",
+    "alertas_calidad_datos": []
+  },
+  {
+    "caso_id": "C-20261101-010",
+    "jugador_id": "J101522",
+    "fecha_corte": "2026-10-31",
+    "estado_investigacion": "completo",
+    "metricas_90d_usd": {
+      "depositos_aprobados": 83.89,
+      "retiros_aprobados": 0.0,
+      "monto_apostado": 71.86,
+      "ggr": 24.34,
+      "bonos_otorgados": 0.0,
+      "n_apuestas": 18
+    },
+    "cuentas_relacionadas": [],
+    "hallazgos": [
+      {
+        "descripcion": "Actividad dentro de lo normal para su marca",
+        "evidencia": "transacciones y apuestas de la ventana"
+      }
+    ],
+    "nivel_preocupacion": "bajo",
+    "derivar_a": [],
+    "resumen": "No se encontró un patrón que explique el score. Actividad y montos dentro de lo esperado.",
+    "alertas_calidad_datos": []
+  }
+]

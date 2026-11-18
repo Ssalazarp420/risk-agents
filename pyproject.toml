@@ -1,0 +1,33 @@
+[project]
+name = "risk-agents"
+version = "0.1.0"
+description = "AI agents that investigate risk cases for an online casino and sportsbook and write a case file for a human analyst"
+readme = "README.md"
+authors = [
+    { name = "Ssalazarp420", email = "ssalazarp@unal.edu.co" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "jsonschema>=4.23",
+    "openai>=2",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.6,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "ruff>=0.17.5",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

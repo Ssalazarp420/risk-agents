@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Expediente de investigación",
+  "description": "Una línea de expedientes.jsonl por cada caso de casos_del_dia.csv.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["caso_id", "jugador_id", "fecha_corte", "estado_investigacion", "metricas_90d_usd",
+               "cuentas_relacionadas", "hallazgos", "nivel_preocupacion", "derivar_a", "resumen",
+               "alertas_calidad_datos"],
+  "properties": {
+    "caso_id": {"type": "string"},
+    "jugador_id": {"type": "string"},
+    "fecha_corte": {"type": "string", "format": "date"},
+    "estado_investigacion": {
+      "enum": ["completo", "sin_datos", "incompleto", "omitido"],
+      "description": "completo: se investigó. sin_datos: no hay información para investigar. incompleto: se empezó pero algo falló. omitido: no se investigó; explica por qué en el resumen."
+    },
+    "metricas_90d_usd": {
+      "description": "Ventana de 90 días que termina en la fecha de corte del caso, incluida. Todo en USD. null si no hay datos.",
+      "type": ["object", "null"],
+      "additionalProperties": false,
+      "required": ["depositos_aprobados", "retiros_aprobados", "monto_apostado", "ggr", "bonos_otorgados", "n_apuestas"],
+      "properties": {
+        "depositos_aprobados": {"type": "number", "description": "Suma de los depósitos con estado aprobada."},
+        "retiros_aprobados": {"type": "number", "description": "Suma de los retiros con estado aprobada."},
+        "monto_apostado": {"type": "number", "description": "Suma del monto de todas las apuestas, con o sin bono."},
+        "ggr": {"type": "number", "description": "Monto apostado menos ganancias pagadas al jugador (positivo: gana la casa)."},
+        "bonos_otorgados": {"type": "number", "description": "Suma del monto de los bonos otorgados en la ventana, sin importar su estado."},
+        "n_apuestas": {"type": "integer"}
+      }
+    },
+    "cuentas_relacionadas": {
+      "type": "array", "items": {"type": "string"},
+      "description": "jugador_id de otras cuentas que creas que pertenecen a la misma persona o grupo."
+    },
+    "hallazgos": {
+      "type": "array",
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["descripcion", "evidencia"],
+        "properties": {
+          "descripcion": {"type": "string"},
+          "evidencia": {"type": "string", "description": "De dónde sale: tabla, herramienta o cifra."}
+        }
+      }
+    },
+    "nivel_preocupacion": {"enum": ["bajo", "medio", "alto", null]},
+    "derivar_a": {
+      "type": "array", "uniqueItems": true,
+      "items": {"enum": ["riesgo", "juego_responsable"]},
+      "description": "Equipos que deberían revisar el caso. Puede estar vacío."
+    },
+    "resumen": {"type": "string", "maxLength": 800, "description": "Para el analista: qué pasa y por qué importa."},
+    "alertas_calidad_datos": {
+      "type": "array", "items": {"type": "string"},
+      "description": "Cualquier cosa rara en los datos o en el proceso que el analista o el equipo técnico deba saber."
+    }
+  }
+}

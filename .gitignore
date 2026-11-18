@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets: never committed
+.env
+
+# Windows download metadata (WSL)
+*:Zone.Identifier
+
+# Statement of the test: the reviewers already have it
+*.pdf
+
+# Editor
+.vscode/
