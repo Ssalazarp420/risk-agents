@@ -145,6 +145,7 @@ Estas reglas se validaron reproduciendo **exactamente** las métricas de los 5 c
 | `monto_apostado` y `n_apuestas` incluyen las apuestas con y sin bono | Coincide |
 | `bonos_otorgados` usa `fecha_otorgado` dentro de la ventana, en cualquier estado | Coincide |
 | Se suma en la moneda original, se multiplica por `usd_por_unidad` y se redondea a 2 decimales | Coincide al centavo |
+| El GGR se redondea **después** de restar, no cada lado por separado | Redondeando cada lado, el caso 020 se desvía un centavo (prueba `test_reproduces_the_analyst_metrics`) |
 | Las fechas se comparan como texto (`AAAA-MM-DD HH:MM:SS` ordena bien) y están en hora local de cada marca | Todas las fechas tienen el formato correcto; no hay que convertir zonas horarias porque cada jugador solo opera en su marca |
 
 ---
