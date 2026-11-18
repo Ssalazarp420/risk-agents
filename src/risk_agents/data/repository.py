@@ -10,6 +10,8 @@ from pathlib import Path
 
 from risk_agents.data.rules import Metrics90d, NativeTotals, Window, metrics_usd, window_for
 
+ACTIVITY_TABLES = ("transacciones", "apuestas", "bonos", "dispositivos", "scores_riesgo")
+
 
 class UnknownCurrencyError(LookupError):
     """A player's currency has no row in tasas_cambio: converting would mean guessing."""
@@ -79,6 +81,33 @@ class Repository:
             bounds,
         ).fetchone()
         return NativeTotals(deposits, withdrawals, staked, paid_out, bonuses, n_bets)
+
+    def get_score(self, jugador_id: str, fecha_corte: str) -> float | None:
+        row = self.conn.execute(
+            "SELECT score FROM scores_riesgo WHERE jugador_id = ? AND fecha_corte = ?",
+            (jugador_id, fecha_corte),
+        ).fetchone()
+        return row[0] if row else None
+
+    def scores_at_least(self, fecha_corte: str, min_score: float) -> list[tuple[str, float]]:
+        """Players scored at or above min_score on that cutoff, highest first."""
+        return self.conn.execute(
+            "SELECT jugador_id, score FROM scores_riesgo"
+            " WHERE fecha_corte = ? AND score >= ? ORDER BY score DESC, jugador_id",
+            (fecha_corte, min_score),
+        ).fetchall()
+
+    def rows_per_table(self, jugador_id: str) -> dict[str, int]:
+        """How many rows mention the player in each table; tables with none are left out."""
+        counts = {}
+        for table in ACTIVITY_TABLES:
+            # Table names cannot be SQL parameters; they come from a fixed tuple, never input.
+            (n,) = self.conn.execute(
+                f"SELECT count(*) FROM {table} WHERE jugador_id = ?", (jugador_id,)
+            ).fetchone()
+            if n:
+                counts[table] = n
+        return counts
 
     def metrics_90d(self, jugador_id: str, fecha_corte: str) -> Metrics90d | None:
         """metricas_90d_usd for a case, or None if the player does not exist."""
