@@ -169,6 +169,65 @@ class TestRecoverableMistakes:
         assert "cuentas_relacionadas" in llm.calls[1]["messages"][-1]["content"]
 
 
+def provider_rejection(message: str):
+    import httpx2
+    import openai
+
+    request = httpx2.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+    return openai.BadRequestError(
+        message, response=httpx2.Response(400, request=request), body=None
+    )
+
+
+class RejectingLLM(ScriptedLLM):
+    """Raises the given errors first, then plays the scripted replies."""
+
+    def __init__(self, errors, replies):
+        super().__init__(list(replies))
+        self.errors = list(errors)
+
+    def complete(self, messages, tools=None):
+        if self.errors:
+            self.calls.append({"messages": [dict(m) for m in messages], "tools": tools})
+            raise self.errors.pop(0)
+        return super().complete(messages, tools)
+
+
+class TestProviderRejections:
+    def test_a_tool_call_the_provider_rejects_goes_back_to_the_model(self, box_for):
+        error = provider_rejection(
+            "Error code: 400 - tool call validation failed: parameters for tool"
+            " detalle_transacciones did not match schema: `/tipo`: value must be one of ..."
+        )
+        llm = RejectingLLM([error], [conclude()])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto", preload=())
+        assert result.status == "completo"
+        assert result.steps == 2
+        reminder = llm.calls[1]["messages"][-1]
+        assert reminder["role"] == "user" and "/tipo" in reminder["content"]
+        assert result.trace[0]["rechazada"] is True
+        assert result.cost_usd is None  # the rejected call's cost is unknown
+
+    @pytest.mark.parametrize(
+        "message",
+        [
+            "Error code: 400 - Failed to parse tool call arguments as JSON",
+            "Error code: 400 - Tool call validation failed: attempted to call tool 'json'"
+            " which was not in request.tools",
+        ],
+    )
+    def test_other_malformed_tool_calls_are_also_sent_back(self, box_for, message):
+        llm = RejectingLLM([provider_rejection(message)], [conclude()])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto", preload=())
+        assert result.status == "completo"
+
+    def test_other_bad_requests_still_end_the_case(self, box_for):
+        llm = RejectingLLM([provider_rejection("Error code: 400 - context too long")], [])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto", preload=())
+        assert result.status == "incompleto"
+        assert "context too long" in result.error
+
+
 class TestLimits:
     def test_stops_at_the_step_limit(self, box_for):
         looping = [reply(tool_calls=[call("bonos", id=f"c{i}")]) for i in range(MAX_STEPS)]
@@ -237,6 +296,29 @@ class TestContext:
         assert "0.812" in text and "0.84" in text  # previous and current score
         assert "49196" in text  # n_apuestas from the code's metrics
         assert "una alerta" in text
+
+    def test_gives_the_model_a_sense_of_scale(self, repo, cases):
+        data = json.loads(build_context(cases["C-20261101-025"], repo, []).split("\n\n", 1)[1])
+        scale = data["referencias_poblacion"]
+        assert scale["n_apuestas"]["valor"] == 49196
+        assert scale["n_apuestas"]["percentil"] == 100
+        assert scale["n_apuestas"]["maximo"] == 49196
+        assert scale["max_apuestas_en_un_dia"]["percentil"] == 100
+        assert scale["n_apuestas"]["mediana"] < 100
+        assert scale["n_apuestas"]["veces_p99"] >= 10
+        assert scale["n_apuestas"]["extremo"] is True
+
+    def test_a_high_percentile_is_not_always_extreme(self, repo, cases):
+        # The VIP (009) is at percentile 100 in bets but only a few times the p99.
+        data = json.loads(build_context(cases["C-20261101-009"], repo, []).split("\n\n", 1)[1])
+        bets = data["referencias_poblacion"]["n_apuestas"]
+        assert bets["percentil"] == 100
+        assert bets["veces_p99"] < 10
+        assert bets["extremo"] is False
+
+    def test_an_ordinary_player_is_not_extreme(self, repo, cases):
+        data = json.loads(build_context(cases["C-20261101-007"], repo, []).split("\n\n", 1)[1])
+        assert data["referencias_poblacion"]["n_apuestas"]["percentil"] < 90
 
     def test_has_no_personal_data(self, repo, cases):
         case = cases["C-20261101-025"]

@@ -162,6 +162,8 @@ class RunScore:
     seconds_per_case: list[float]  # model latency per investigated case, retries included
     retries: int
     incomplete: int
+    known_cost_per_case: float | None = None  # from the trace; rejected calls are not priced
+    rejected_calls: int = 0
 
 
 def _lines(path: Path) -> list[dict]:
@@ -192,6 +194,12 @@ def score_run(folder: str | Path, expectations: dict[str, Expectation] | None = 
         seconds_per_case=[sum(e["latencia_ms"] for e in ev) / 1000 for ev in llm_events],
         retries=sum(e.get("reintentos", 0) for ev in llm_events for e in ev),
         incomplete=sum(f["estado_investigacion"] == "incompleto" for f in files.values()),
+        known_cost_per_case=(
+            sum(float(e["costo_usd"] or 0) for ev in llm_events for e in ev) / len(traces)
+            if traces
+            else None
+        ),
+        rejected_calls=sum(bool(e.get("rechazada")) for ev in llm_events for e in ev),
     )
 
 
@@ -297,6 +305,12 @@ def render_report(systems: dict[str, list[RunScore]]) -> str:
     lines += ["", "## Costo, pasos y tiempo", "", header + " |", "|---|" + "---|" * len(names)]
     rows = {
         "Costo por corrida (USD)": lambda rs: _span([r.cost_usd for r in rs], ".4f"),
+        "Costo conocido por caso investigado (USD)": lambda rs: _span(
+            [r.known_cost_per_case for r in rs], ".4f"
+        ),
+        "Llamadas rechazadas por el proveedor (costo no informado)": lambda rs: _span(
+            [r.rejected_calls for r in rs], "d"
+        ),
         "Tokens de entrada por corrida": lambda rs: _span([r.input_tokens for r in rs], ",.0f"),
         "Tokens de salida por corrida": lambda rs: _span([r.output_tokens for r in rs], ",.0f"),
         "Pasos del modelo por caso (promedio)": lambda rs: _span(

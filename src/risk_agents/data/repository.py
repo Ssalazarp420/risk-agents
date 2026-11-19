@@ -43,6 +43,7 @@ class Player:
 class Repository:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self.conn = conn
+        self._distributions: dict[Window, dict[str, list[float]]] = {}
 
     def get_player(self, jugador_id: str) -> Player | None:
         row = self.conn.execute(
@@ -236,6 +237,35 @@ class Repository:
             " GROUP BY m.ip_red ORDER BY m.ip_red",
             (jugador_id, until, jugador_id, until),
         ).fetchall()
+
+    def activity_distribution(self, window: Window) -> dict[str, list[float]]:
+        """Per-player values in the window, sorted, for every player with activity: bets, most
+        bets in a day, days with bets, and approved deposits in USD. Cached per window: every
+        case of a batch shares the same cutoff."""
+        if window not in self._distributions:
+            bets = self.conn.execute(
+                "SELECT sum(n), max(n), count(*) FROM ("
+                " SELECT jugador_id, count(*) AS n FROM apuestas"
+                " WHERE fecha_hora BETWEEN ? AND ?"
+                " GROUP BY jugador_id, substr(fecha_hora, 1, 10))"
+                " GROUP BY jugador_id",
+                (window.start, window.end),
+            ).fetchall()
+            deposits = self.conn.execute(
+                "SELECT sum(t.monto * r.usd_por_unidad) FROM transacciones t"
+                " JOIN jugadores j ON j.jugador_id = t.jugador_id"
+                " JOIN tasas_cambio r ON r.moneda = j.moneda"
+                " WHERE t.tipo = 'deposito' AND t.estado = 'aprobada'"
+                " AND t.fecha_hora BETWEEN ? AND ? GROUP BY t.jugador_id",
+                (window.start, window.end),
+            ).fetchall()
+            self._distributions[window] = {
+                "n_apuestas": sorted(b[0] for b in bets),
+                "max_apuestas_en_un_dia": sorted(b[1] for b in bets),
+                "dias_activos": sorted(b[2] for b in bets),
+                "depositos_aprobados_usd": sorted(d[0] for d in deposits),
+            }
+        return self._distributions[window]
 
     def metrics_90d(self, jugador_id: str, fecha_corte: str) -> Metrics90d | None:
         """metricas_90d_usd for a case, or None if the player does not exist."""

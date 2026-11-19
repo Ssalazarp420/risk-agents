@@ -297,3 +297,26 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 - **Embeddings:** quedan como opción ([D-007](decisiones.md#d-007)).
 
 **Costo de la decisión.** Las hipótesis son nuestras: si están mal, el reporte castiga al modelo por discrepar con nosotros. Por eso cada diferencia se revisa a mano antes de llamarla error.
+
+---
+
+## D-017
+
+**Calibración del juicio: referencias de magnitud calculadas por el código, definiciones estrictas y alertas de factores en código** · 2026-11-18 · Vigente
+
+**Contexto.** La evaluación v1 mostró sobre-escalamiento ([caso de fallo 8](casos_de_fallo.md#8-evaluación-v1-casos-normales-escalados-a-medio)) y el 025 sin juego responsable ([caso 6](casos_de_fallo.md#6-el-caso-025-sin-señal-de-juego-responsable-y-con-un-factor-del-score-mal-leído)). La primera corrección (v2) introdujo otro error ([caso 9](casos_de_fallo.md#9-evaluación-v2-el-percentil-escaló-al-vip-a-juego-responsable)).
+
+**Opción elegida (v3, completada en v4).**
+- **Referencias de magnitud calculadas por el código** (`referencias_poblacion`): percentil, mediana, p99, `veces_p99` y máximo, entre los jugadores con actividad en la misma ventana, para apuestas, apuestas por día, días activos y depósitos.
+- **Definiciones estrictas en el prompt:**
+  - "medio" exige una señal concreta;
+  - sin señales, el nivel es "bajo" aunque el score sea alto;
+  - hay una lista de comportamientos normales que no son señal;
+  - se recuerda el signo del GGR;
+  - "extremo" significa 10× el p99 o más, y desde la v4 el código lo marca en cada cifra (`extremo: true/false`), porque en una corrida el modelo ignoró el umbral;
+  - juego responsable exige señales de daño.
+- **Alertas del código** para los factores del score que se pueden comprobar.
+
+**Por qué.** Mantiene la división del trabajo: el código calcula las referencias y las comprobaciones objetivas, y el modelo juzga con ellas.
+
+**Limitación declarada.** Las versiones v2 y v3 se ajustaron **viendo los resultados de la evaluación** sobre estos mismos 25 casos. Las correcciones son generales (definiciones y referencias, nada que nombre un caso), pero los 5 casos del analista ya no son una medición independiente. El umbral de 10× sale de la distribución de este operador. Con más datos, habría que validar en casos nuevos, revisados por humanos, antes de dar el resultado por bueno.

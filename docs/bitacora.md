@@ -195,3 +195,24 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 
 **Siguiente**
 - Las 3 corridas con Groq cuando el plan Developer esté activo; después, el análisis de diferencias y la prueba de la corrección del caso 025.
+
+## 2026-11-18 · Evaluación con Groq, cuatro versiones y entrega
+
+**Hecho**
+- Plan Developer de Groq: 250.000 tokens por minuto. Cada corrida de 23 casos tarda unos 2 minutos, sin reintentos.
+- 4 versiones medidas, cada una con 3 corridas (la v3 con 4); detalle en [04_evaluacion.md](04_evaluacion.md):
+  - **v1:** el prompt original sobre-escalaba casos normales ([caso de fallo 8](casos_de_fallo.md#8-evaluación-v1-casos-normales-escalados-a-medio)).
+  - **v2:** definiciones estrictas y percentiles de población. Los percentiles escalaron al VIP ([caso 9](casos_de_fallo.md#9-evaluación-v2-el-percentil-escaló-al-vip-a-juego-responsable)).
+  - **v3:** `veces_p99`, alertas del código para los factores del score, y recuperación de los 400 de Groq ([caso 7](casos_de_fallo.md#7-groq-rechaza-las-llamadas-a-herramientas-que-no-cumplen-el-esquema)).
+  - **v4:** el código marca `extremo` en cada cifra.
+- Resultado de la v4: 5/5 contra el analista en las 3 corridas, 14–15/18 contra nuestras hipótesis, las cuatro trampas resueltas salvo el anillo, que a veces sale incompleto, y 70 % de consistencia (v1: 39 %).
+- `expedientes.jsonl`: una corrida normal más del sistema final, entregada tal como salió. 25/25 válidos, 5/5 contra el analista y 15/18 contra las hipótesis.
+- [Parte 2](parte2_arquitectura_multiagente.md): arquitectura multiagente en dos páginas con diagrama.
+- Costo de toda la evaluación: unos 0,83 USD en 322 casos investigados, más 4 llamadas rechazadas cuyo costo Groq no informa.
+- 209 pruebas.
+
+**Aprendido**
+- Una referencia mal diseñada empeora al modelo: el percentil, en una distribución sesgada, convirtió a un VIP en caso de juego responsable.
+- El modelo ignora umbrales numéricos del prompt en algunas corridas. Que el código aplique el umbral y entregue el resultado (`extremo: true/false`) fue más estable.
+- La consistencia entre corridas es una métrica tan importante como el acierto.
+- Ajustar sobre el conjunto de evaluación tiene un costo: el 5/5 ya no es independiente, y está declarado en [D-017](decisiones.md#d-017).

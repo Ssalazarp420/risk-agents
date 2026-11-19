@@ -6,6 +6,7 @@ cases in casos_referencia.json (docs/decisiones.md, D-003).
 
 import dataclasses
 import datetime as dt
+from bisect import bisect_right
 from dataclasses import dataclass
 
 WINDOW_DAYS = 90
@@ -77,3 +78,11 @@ def metrics_usd(totals: NativeTotals, rate: float) -> Metrics90d:
         bonos_otorgados=to_usd(totals.bonuses, rate),
         n_apuestas=totals.n_bets,
     )
+
+
+def percentile_rank(sorted_values: list[float], value: float) -> int | None:
+    """Share of the population at or below `value`, from 0 to 100. Ties count as below, so the
+    largest value is at 100. `sorted_values` must be sorted ascending."""
+    if not sorted_values:
+        return None
+    return round(100 * bisect_right(sorted_values, value) / len(sorted_values))
