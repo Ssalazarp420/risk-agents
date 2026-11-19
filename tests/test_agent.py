@@ -238,6 +238,19 @@ class TestContext:
         assert "49196" in text  # n_apuestas from the code's metrics
         assert "una alerta" in text
 
+    def test_gives_the_model_a_sense_of_scale(self, repo, cases):
+        data = json.loads(build_context(cases["C-20261101-025"], repo, []).split("\n\n", 1)[1])
+        scale = data["referencias_poblacion"]
+        assert scale["n_apuestas"]["valor"] == 49196
+        assert scale["n_apuestas"]["percentil"] == 100
+        assert scale["n_apuestas"]["maximo"] == 49196
+        assert scale["max_apuestas_en_un_dia"]["percentil"] == 100
+        assert scale["n_apuestas"]["mediana"] < 100
+
+    def test_an_ordinary_player_is_not_extreme(self, repo, cases):
+        data = json.loads(build_context(cases["C-20261101-007"], repo, []).split("\n\n", 1)[1])
+        assert data["referencias_poblacion"]["n_apuestas"]["percentil"] < 90
+
     def test_has_no_personal_data(self, repo, cases):
         case = cases["C-20261101-025"]
         personal = repo.conn.execute(

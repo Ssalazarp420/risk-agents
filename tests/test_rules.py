@@ -4,7 +4,15 @@ import datetime as dt
 
 import pytest
 
-from risk_agents.data.rules import Metrics90d, NativeTotals, Window, metrics_usd, to_usd, window_for
+from risk_agents.data.rules import (
+    Metrics90d,
+    NativeTotals,
+    Window,
+    metrics_usd,
+    percentile_rank,
+    to_usd,
+    window_for,
+)
 
 
 class TestWindow:
@@ -111,3 +119,18 @@ class TestMetricsUsd:
             "bonos_otorgados",
             "n_apuestas",
         ]
+
+
+class TestPercentileRank:
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [(0, 0), (1, 25), (2.5, 50), (4, 100), (99, 100)],
+    )
+    def test_share_of_the_population_at_or_below_the_value(self, value, expected):
+        assert percentile_rank([1, 2, 3, 4], value) == expected
+
+    def test_ties_count_as_at_or_below(self):
+        assert percentile_rank([5, 5, 5, 5], 5) == 100
+
+    def test_an_empty_population_has_no_percentile(self):
+        assert percentile_rank([], 3) is None
