@@ -12,7 +12,7 @@ Reglas para trabajar en este repo. Contexto: [docs/01_contexto.md](docs/01_conte
 
 - `main` (estable) y `develop` (integración). Cada paso en `feature/<tema>` desde `develop`, merge con `--no-ff`.
 - Conventional Commits (`feat:`, `fix:`, `test:`, `docs:`, `chore:`, `refactor:`).
-- Claude hace commits, push de `develop` y de las ramas, y PR sin pedir permiso. El merge a `main` solo cuando el autor lo pida.
+- Claude hace commits, push de `develop` y de las ramas, y PR sin pedir permiso. También abre y mergea PR de `develop` a `main` en los hitos estables (pruebas en verde y documentación al día).
 
 ## Calidad
 

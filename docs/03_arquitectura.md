@@ -131,20 +131,26 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 
 ### 3.8 Evaluación
 
-- **Qué es.** Un script que compara los expedientes generados con los 5 de `casos_referencia.json`.
+- **Qué es.** `src/risk_agents/evaluation.py` (comando `uv run risk-agents-eval`) y `scripts/correr_evaluacion.sh`, que corre la línea base y N corridas de Groq y genera [`evaluacion/reporte.md`](../evaluacion/reporte.md) ([D-016](decisiones.md#d-016)).
 - **Para qué sirve.** Responder "¿qué tan cerca estás?" con cifras y explicar las diferencias.
-- **Cómo se usa aquí.** Métricas propuestas:
+- **Qué es lo esperado.** Hay dos fuentes, y el reporte nunca las mezcla:
+  - **Analista:** los 5 casos de `casos_referencia.json`. Nivel, derivación, cuentas y métricas se comparan de forma exacta.
+  - **Hipótesis:** nuestra lectura de los otros 20 casos ([02_datos.md](02_datos.md#6-perfil-de-cada-caso)), en [`evaluacion/esperado.json`](../evaluacion/esperado.json), con márgenes donde es ambigua. Por ejemplo, el 025 acepta "medio o alto" y exige que se derive a juego responsable. Sirve para detectar errores claros, no es una verdad.
+- **Qué se mide.**
 
-  | Qué se compara | Cómo |
+  | Qué | Cómo |
   |---|---|
-  | `estado_investigacion`, `nivel_preocupacion`, `derivar_a` | Acierto exacto |
-  | `metricas_90d_usd` | Error absoluto por campo (debe ser 0: las calcula el código) |
-  | `cuentas_relacionadas` | Precisión y exhaustividad contra la lista del analista |
-  | `hallazgos` y `resumen` | Si mencionan los hechos clave del analista; opcionalmente, similitud con embeddings ([D-007](decisiones.md#d-007)) |
-  | Validez del esquema | Las 25 líneas deben validar |
-  | Costo y latencia | Por caso y por corrida |
+  | Validez | Las 25 líneas contra el esquema oficial |
+  | Estado, nivel, derivación | Exacto contra el analista; dentro del margen para las hipótesis. La derivación se compara como conjunto |
+  | Cuentas relacionadas | Conjunto exacto; cuenta faltantes y sobrantes |
+  | Métricas | Igualdad exacta contra las referencias |
+  | Hechos clave | Grupos de palabras que deben aparecer en hallazgos o resumen (sin importar mayúsculas ni acentos) |
+  | Trampas | T3 (011), T6 (005 y 012), T8 (002 y 025) y T9 (016 y 020), cada una como acierto o fallo |
+  | Costo y tiempo | Costo, tokens, pasos, segundos de modelo y reintentos, desde las trazas |
+  | Consistencia | Casos con el mismo nivel y derivación en todas las corridas de un sistema |
 
-  Como el LLM no es determinista, se corre **3 veces** y se reporta el rango, igual que en el proyecto personal. Los 5 casos de referencia son pocos: se complementan con las hipótesis de [02_datos.md](02_datos.md#6-perfil-de-cada-caso) para los otros 20, marcadas como "nuestra lectura", no como verdad.
+- **Corridas.** Como el LLM no es determinista, se corre **3 veces** y se reporta el rango de cada métrica. La **línea base de reglas** se evalúa igual; como sus umbrales se escribieron viendo estos casos, su resultado es un techo optimista y no una comparación justa en datos nuevos.
+- **Similitud con embeddings** ([D-007](decisiones.md#d-007)): no se usa por ahora. Con 5 referencias, los hechos clave por palabras son más fáciles de auditar y no agregan una dependencia.
 
 ### 3.9 Trazabilidad
 

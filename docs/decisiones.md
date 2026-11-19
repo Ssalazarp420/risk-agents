@@ -274,3 +274,26 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 | 025 | — | 1 paso, 3.745 tokens, 0,0013 USD |
 
 **Costo de la decisión.** Se pagan las tres herramientas aunque un caso no las necesitara. Son consultas locales de milisegundos y salidas de pocos miles de caracteres.
+
+---
+
+## D-016
+
+**Evaluación con dos fuentes separadas, tres corridas y la línea base como punto de comparación** · 2026-11-18 · Vigente
+
+**Contexto.** Solo hay 5 expedientes del analista. Con 5 casos no se ve si el agente falla en las trampas (inyección, red compartida, factores del score, anillo) ni en los casos claros que no tienen referencia (por ejemplo, el 025). Además, el modelo no es determinista.
+
+**Opción elegida.**
+- **Dos fuentes, nunca mezcladas:** los 5 casos del analista se comparan de forma exacta; los otros 20, contra nuestras hipótesis de `02_datos.md` (`evaluacion/esperado.json`), con márgenes donde la lectura es ambigua.
+- **Chequeos por trampa** como filas propias del reporte.
+- **3 corridas** del modelo con `--fresh`, reportando el rango de cada métrica y la consistencia entre corridas.
+- **La línea base de reglas** se evalúa con el mismo código.
+- **Todo reproducible:** las corridas se guardan en `evaluacion/corridas/` y el reporte se genera con un comando; ninguna cifra del análisis se escribe a mano.
+
+**Por qué.** Las hipótesis amplían la cobertura sin presentarse como verdad. La línea base pone en contexto el resultado del modelo: un 5/5 contra el analista no dice mucho si 7 reglas también lo logran. La diferencia útil está en los casos que las reglas no anticipan y en la calidad de la explicación.
+
+**Alternativas descartadas.**
+- **LLM como juez del resumen:** agrega un segundo modelo no determinista para evaluar al primero; con 5 referencias, los hechos clave por palabras son más auditables.
+- **Embeddings:** quedan como opción ([D-007](decisiones.md#d-007)).
+
+**Costo de la decisión.** Las hipótesis son nuestras: si están mal, el reporte castiga al modelo por discrepar con nosotros. Por eso cada diferencia se revisa a mano antes de llamarla error.
