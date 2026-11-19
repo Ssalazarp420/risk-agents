@@ -15,13 +15,14 @@ import json
 from dataclasses import dataclass
 from decimal import Decimal
 from pathlib import Path
+from statistics import median
 from typing import Any, Literal
 
 from jsonschema import Draft202012Validator
 
 from risk_agents.cases import Case
 from risk_agents.data.repository import Repository
-from risk_agents.data.rules import window_for
+from risk_agents.data.rules import percentile_rank, window_for
 from risk_agents.llm import ChatModel, LLMReply, Message, ToolCall
 from risk_agents.tools import TOOL_SPECS, ToolBox
 
@@ -142,12 +143,44 @@ def build_context(case: Case, repo: Repository, alerts: list[str]) -> str:
         else None,
         "scores_riesgo": scores,
         "metricas_90d_usd": metrics.as_dict() if metrics else None,
+        "referencias_poblacion": _scale(case, repo, metrics),
         "alertas_del_codigo": alerts,
     }
     return (
         "Investiga este caso. Las métricas las calculó el código y son correctas.\n\n"
         + json.dumps(data, ensure_ascii=False, indent=1)
     )
+
+
+def _scale(case: Case, repo: Repository, metrics) -> dict[str, Any] | None:
+    """Where the player stands among all players active in the same window. A model judges
+    patterns well and magnitudes badly without a reference (failure case 6)."""
+    if metrics is None:
+        return None
+    window = window_for(case.fecha_corte)
+    population = repo.activity_distribution(window)
+    days, busiest = repo.betting_days(case.jugador_id, window)
+    values = {
+        "n_apuestas": metrics.n_apuestas,
+        "max_apuestas_en_un_dia": busiest,
+        "dias_activos": days,
+        "depositos_aprobados_usd": metrics.depositos_aprobados,
+    }
+    scale: dict[str, Any] = {
+        "descripcion": "Percentil del jugador entre los jugadores con actividad en la misma"
+        " ventana (100 = el mayor). Calculado por el código.",
+    }
+    for name, value in values.items():
+        dist = population[name]
+        scale[name] = {
+            "valor": value,
+            "percentil": percentile_rank(dist, value),
+            "mediana": round(median(dist), 2) if dist else None,
+            "p99": round(dist[min(len(dist) - 1, int(0.99 * len(dist)))], 2) if dist else None,
+            "maximo": round(dist[-1], 2) if dist else None,
+            "jugadores": len(dist),
+        }
+    return scale
 
 
 def run_agent(
