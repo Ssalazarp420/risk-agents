@@ -37,11 +37,16 @@ class RuleBasedLLM:
     model = "reglas"
 
     def complete(self, messages: list[Message], tools: list[dict] | None = None) -> LLMReply:
+        # Tool call ids are "<name>" when this model asks and "precarga_<name>" when the agent
+        # preloaded the tool; either way the result is keyed by tool name.
         outputs = {
-            m["tool_call_id"]: json.loads(m["content"]) for m in messages if m["role"] == "tool"
+            m["tool_call_id"].removeprefix("precarga_"): json.loads(m["content"])
+            for m in messages
+            if m["role"] == "tool"
         }
-        if not all(name in outputs for name in FIRST_TOOLS):
-            return _reply([ToolCall(name, name, "{}") for name in FIRST_TOOLS])
+        missing = [name for name in FIRST_TOOLS if name not in outputs]
+        if missing:
+            return _reply([ToolCall(name, name, "{}") for name in missing])
         context = json.loads(messages[1]["content"].split("\n\n", 1)[1])
         conclusion = judge(context, outputs)
         return _reply(

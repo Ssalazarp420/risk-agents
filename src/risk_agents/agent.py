@@ -22,11 +22,16 @@ from jsonschema import Draft202012Validator
 from risk_agents.cases import Case
 from risk_agents.data.repository import Repository
 from risk_agents.data.rules import window_for
-from risk_agents.llm import ChatModel, LLMReply, Message
+from risk_agents.llm import ChatModel, LLMReply, Message, ToolCall
 from risk_agents.tools import TOOL_SPECS, ToolBox
 
 PROMPT_PATH = Path(__file__).resolve().parent / "prompts" / "investigador_riesgo.md"
 SYSTEM_PROMPT = PROMPT_PATH.read_text(encoding="utf-8")
+
+# Tools the prompt says to use on every case. The code runs them before the first model call,
+# for the case's player, and puts them in the history as if the model had asked: one model step
+# and its re-sent history saved per tool (failure case 5, D-015).
+PRELOADED_TOOLS = ("cuentas_relacionadas", "resumen_transacciones", "resumen_apuestas")
 
 # Model calls per case. The prompt asks for 4 to 7 tool calls; tools can be asked in parallel,
 # so 10 model calls leave room for a correction or two without letting a loop run up the bill.
@@ -146,7 +151,12 @@ def build_context(case: Case, repo: Repository, alerts: list[str]) -> str:
 
 
 def run_agent(
-    llm: ChatModel, box: ToolBox, context: str, *, max_steps: int = MAX_STEPS
+    llm: ChatModel,
+    box: ToolBox,
+    context: str,
+    *,
+    max_steps: int = MAX_STEPS,
+    preload: tuple[str, ...] = PRELOADED_TOOLS,
 ) -> AgentResult:
     messages: list[Message] = [
         {"role": "system", "content": SYSTEM_PROMPT},
@@ -155,6 +165,26 @@ def run_agent(
     tools = [*TOOL_SPECS, CONCLUDE_SPEC]
     run = _Run(box)
     try:
+        if preload:
+            calls = [ToolCall(f"precarga_{name}", name, "{}") for name in preload]
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [
+                        {
+                            "id": c.id,
+                            "type": "function",
+                            "function": {"name": c.name, "arguments": c.arguments},
+                        }
+                        for c in calls
+                    ],
+                }
+            )
+            for c in calls:
+                output = box.call(c.name, c.arguments)
+                run.record_tool(c.name, c.arguments, output, preloaded=True)
+                messages.append(_tool_message(c.id, output))
         for _ in range(max_steps):
             r = llm.complete(messages, tools)
             run.record(r)
@@ -174,13 +204,7 @@ def run_agent(
                 else:
                     output = box.call(c.name, c.arguments)
                 run.record_tool(c.name, c.arguments, output)
-                messages.append(
-                    {
-                        "role": "tool",
-                        "tool_call_id": c.id,
-                        "content": json.dumps(output, ensure_ascii=False),
-                    }
-                )
+                messages.append(_tool_message(c.id, output))
         return run.result(error=f"Se alcanzó el límite de {max_steps} pasos sin una conclusión.")
     except Exception as e:  # provider errors after retries, or a bug: the case, not the run
         return run.result(error=f"{type(e).__name__}: {e}")
@@ -217,12 +241,15 @@ class _Run:
             }
         )
 
-    def record_tool(self, name: str, arguments: str, output: dict) -> None:
+    def record_tool(
+        self, name: str, arguments: str, output: dict, *, preloaded: bool = False
+    ) -> None:
         self.trace.append(
             {
                 "tipo": "herramienta",
                 "nombre": name,
                 "argumentos": arguments,
+                "precargada": preloaded,
                 "error": "error" in output,
                 "resultado": output,
             }
@@ -240,6 +267,14 @@ class _Run:
             trace=self.trace,
             error=error,
         )
+
+
+def _tool_message(call_id: str, output: dict) -> Message:
+    return {
+        "role": "tool",
+        "tool_call_id": call_id,
+        "content": json.dumps(output, ensure_ascii=False),
+    }
 
 
 def _check_conclusion(arguments: str) -> tuple[dict | None, list[str]]:

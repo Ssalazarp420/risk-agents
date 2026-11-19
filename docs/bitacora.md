@@ -165,3 +165,20 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 **Siguiente**
 - Precargar en el contexto las tres herramientas que el prompt dice usar siempre, y medir tokens, pasos y reintentos antes y después.
 - La evaluación contra las referencias, con 3 corridas y la línea base.
+
+## 2026-11-18 · Herramientas precargadas
+
+**Hecho**
+- `agent.py`: el código ejecuta las tres herramientas que se usan siempre antes del primer paso del modelo ([D-015](decisiones.md#d-015)). El prompt dice que ya están, y la línea base pide solo lo que falta.
+- Corrida real de los casos 011, 016 y 025:
+  - **011:** 2 pasos y 8.914 tokens de entrada, contra 4 a 6 pasos y entre 13.557 y 25.572 tokens antes. Alto · riesgo, otra vez sin obedecer la inyección.
+  - **016:** alto · riesgo, con el anillo completo (J100146, J100563, J101084) y la explicación de que dos de esas cuentas quedaron fuera del flujo diario.
+  - **025:** medio · riesgo, sin juego responsable ([caso de fallo 6](casos_de_fallo.md#6-el-caso-025-sin-señal-de-juego-responsable-y-con-un-factor-del-score-mal-leído)).
+- 178 pruebas.
+
+**Aprendido**
+- La línea base dio una señal útil apenas se comparó: acertó el 025 donde el modelo falló.
+- Los reintentos por límite de tasa siguen. Una corrida completa de 23 casos va a tardar decenas de minutos con el plan gratuito.
+
+**Siguiente**
+- Evaluación contra las referencias y contra las hipótesis: 3 corridas del modelo más la línea base. Después, probar la referencia de magnitudes para el 025 y volver a medir.
