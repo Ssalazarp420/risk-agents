@@ -19,6 +19,7 @@ from statistics import median
 from typing import Any, Literal
 
 from jsonschema import Draft202012Validator
+from openai import BadRequestError
 
 from risk_agents.cases import Case
 from risk_agents.data.repository import Repository
@@ -41,6 +42,11 @@ MAX_STEPS = 10
 REMINDER = (
     "Para terminar tienes que llamar a la herramienta `concluir` con tu conclusión. Si te falta"
     " información, pide las herramientas que necesites."
+)
+
+REJECTED_CALL = (
+    "Tu última llamada a una herramienta no cumplió su esquema y no se ejecutó: {error}"
+    " Revisa los valores permitidos y vuelve a llamarla."
 )
 
 CONCLUDE_SPEC = {
@@ -219,7 +225,17 @@ def run_agent(
                 run.record_tool(c.name, c.arguments, output, preloaded=True)
                 messages.append(_tool_message(c.id, output))
         for _ in range(max_steps):
-            r = llm.complete(messages, tools)
+            try:
+                r = llm.complete(messages, tools)
+            except BadRequestError as e:
+                # Groq checks tool arguments against the schema on its side and answers 400
+                # instead of returning the call (failure case 7). Treat it like a wrong tool
+                # call: tell the model and let it fix the call on the next step.
+                if "tool call validation failed" not in str(e):
+                    raise
+                run.record_rejected(str(e))
+                messages.append({"role": "user", "content": REJECTED_CALL.format(error=e)})
+                continue
             run.record(r)
             if r.finish_reason == "length":
                 return run.result(error="La salida del modelo se cortó por el tope de tokens.")
@@ -271,6 +287,25 @@ class _Run:
                 "fin": r.finish_reason,
                 "reintentos": r.retries,
                 "texto": r.content,
+            }
+        )
+
+    def record_rejected(self, error: str) -> None:
+        """A model call the provider rejected. It may have been billed, but the provider does
+        not report its tokens, so the total cost becomes unknown rather than understated."""
+        self.steps += 1
+        self.cost = None
+        self.trace.append(
+            {
+                "tipo": "llm",
+                "paso": self.steps,
+                "rechazada": True,
+                "error": error[:500],
+                "tokens_entrada": 0,
+                "tokens_salida": 0,
+                "costo_usd": None,
+                "latencia_ms": 0,
+                "reintentos": 0,
             }
         )
 

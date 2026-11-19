@@ -169,6 +169,52 @@ class TestRecoverableMistakes:
         assert "cuentas_relacionadas" in llm.calls[1]["messages"][-1]["content"]
 
 
+def provider_rejection(message: str):
+    import httpx2
+    import openai
+
+    request = httpx2.Request("POST", "https://api.groq.com/openai/v1/chat/completions")
+    return openai.BadRequestError(
+        message, response=httpx2.Response(400, request=request), body=None
+    )
+
+
+class RejectingLLM(ScriptedLLM):
+    """Raises the given errors first, then plays the scripted replies."""
+
+    def __init__(self, errors, replies):
+        super().__init__(list(replies))
+        self.errors = list(errors)
+
+    def complete(self, messages, tools=None):
+        if self.errors:
+            self.calls.append({"messages": [dict(m) for m in messages], "tools": tools})
+            raise self.errors.pop(0)
+        return super().complete(messages, tools)
+
+
+class TestProviderRejections:
+    def test_a_tool_call_the_provider_rejects_goes_back_to_the_model(self, box_for):
+        error = provider_rejection(
+            "Error code: 400 - tool call validation failed: parameters for tool"
+            " detalle_transacciones did not match schema: `/tipo`: value must be one of ..."
+        )
+        llm = RejectingLLM([error], [conclude()])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto", preload=())
+        assert result.status == "completo"
+        assert result.steps == 2
+        reminder = llm.calls[1]["messages"][-1]
+        assert reminder["role"] == "user" and "/tipo" in reminder["content"]
+        assert result.trace[0]["rechazada"] is True
+        assert result.cost_usd is None  # the rejected call's cost is unknown
+
+    def test_other_bad_requests_still_end_the_case(self, box_for):
+        llm = RejectingLLM([provider_rejection("Error code: 400 - context too long")], [])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto", preload=())
+        assert result.status == "incompleto"
+        assert "context too long" in result.error
+
+
 class TestLimits:
     def test_stops_at_the_step_limit(self, box_for):
         looping = [reply(tool_calls=[call("bonos", id=f"c{i}")]) for i in range(MAX_STEPS)]
