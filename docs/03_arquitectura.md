@@ -37,13 +37,15 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 
 ### 3.1 Orquestador
 
-- **Qué es.** El programa principal: un bucle sobre los casos del CSV. No es un LLM; es código determinista.
+- **Qué es.** El programa principal (`orchestrator.py`, que se corre con `uv run risk-agents`): un bucle sobre los casos del CSV. No es un LLM; es código determinista ([D-014](decisiones.md#d-014)).
 - **Para qué sirve.** Decide qué se investiga, en qué orden y qué pasa si algo falla. Es el "paso de orquestación" que pide la Parte 3.
 - **Cómo se usa aquí.**
-  - Lee el CSV y pasa cada caso por la prevalidación.
-  - Llama al agente solo con los casos válidos.
-  - Si el agente falla en un caso (error del proveedor, se acaba el límite de pasos, respuesta que no se puede leer), ese caso queda `incompleto` con el motivo en `alertas_calidad_datos`, y el resto sigue. **Un caso malo no tumba la corrida.**
-  - Escribe una línea por caso, **en el mismo orden del CSV**, aunque el caso sea `sin_datos` u `omitido`: el revisor automático espera una línea por caso.
+  - Lee el CSV y pasa cada caso por la prevalidación. Los casos `sin_datos` y `omitido` se resuelven en código.
+  - Para los demás, el código calcula las métricas y **sus propias alertas**, sin depender del modelo: una nota que intenta dar instrucciones (T3) y las cuentas que comparten dispositivo y faltan en el CSV (T9). Después llama al agente.
+  - Si el agente falla en un caso (error del proveedor, límite de pasos, salida cortada), ese caso queda `incompleto` con el motivo, y la corrida sigue. **Un caso malo no tumba la corrida.**
+  - Escribe una línea por caso, **en el mismo orden del CSV**, y reescribe el archivo de forma atómica después de cada caso. Si la corrida se interrumpe, se pierde a lo sumo el caso en curso.
+  - **Reanudación.** Una corrida nueva conserva los expedientes válidos que no son `incompleto` y rehace solo los que faltan o quedaron `incompleto`. `--fresh` empieza de cero y `--only` procesa casos sueltos.
+  - Escribe tres archivos en `salidas/`: `expedientes.jsonl`, `trazas.jsonl` y `resumen_corrida.json` (casos por estado y por nivel, tokens, costo y duración).
 
 ### 3.2 Prevalidación
 
@@ -104,12 +106,15 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 
 ### 3.6 Ensamblador y validación
 
-- **Qué es.** El código que une lo calculado con lo que concluyó el agente, y lo revisa contra `esquema_expediente.json` con la librería `jsonschema`.
+- **Qué es.** El código que une lo calculado con lo que concluyó el agente (`investigated_file` e `incomplete_file`, en `case_file.py`), y lo revisa contra `esquema_expediente.json` con la librería `jsonschema`.
 - **Para qué sirve.** El revisor de la prueba valida cada línea automáticamente: un campo de más, un enum mal escrito o un resumen de 801 caracteres rompen la entrega.
 - **Cómo se usa aquí.**
-  - Las métricas, los ids y el estado los pone el código; el LLM **no puede** sobrescribirlos.
-  - Si el resumen pasa de 800 caracteres, se recorta en el último punto y se deja una alerta (no se pide otra respuesta al modelo, para no gastar).
-  - Una línea que no valida no se escribe tal cual: se marca `incompleto` con el error.
+  - Los ids, el estado y las métricas los pone el código; el LLM **no puede** sobrescribirlos.
+  - **Cuentas relacionadas verificadas.** Una cuenta que el agente propone se conserva solo si `cuentas_relacionadas` la devolvió de verdad. Si no, se descarta y queda una alerta. También se quitan el propio jugador y las repeticiones.
+  - **Alertas en orden de origen:** primero las de la prevalidación y las del código, después las del agente y al final las del ensamblador, sin repetir textos idénticos.
+  - El resumen no puede pasar de 800 caracteres, porque `concluir` ya lo exige.
+  - Antes de escribir, todo expediente se valida contra el esquema oficial. Si no valida, se escribe como `incompleto` con el error.
+  - Un expediente `incompleto` conserva las métricas, porque son correctas aunque el agente haya fallado, y explica el motivo en el resumen y en las alertas.
 
 ### 3.7 Cliente del LLM
 
@@ -142,9 +147,19 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 
 ### 3.9 Trazabilidad
 
-- **Qué es.** El registro de lo que hizo el agente en cada caso.
+- **Qué es.** El registro de lo que hizo el agente en cada caso: `salidas/trazas.jsonl`, una línea por caso procesado.
 - **Para qué sirve.** Poder responder "¿por qué el agente dijo esto?" y auditar que no leyó lo que no debía.
-- **Cómo se usa aquí.** Un archivo de trazas por corrida con, por caso: herramientas llamadas y sus argumentos, tamaño de cada resultado, tokens, costo, latencia y errores. Langfuse (que ya se usa en el proyecto personal) queda como opción, no como requisito, para que el prototipo corra con pocos comandos.
+- **Cómo se usa aquí.** Cada línea trae el caso, la decisión de la prevalidación, el modelo, el estado final, los pasos, los tokens, el costo y el error si lo hubo. Además trae cada evento:
+  - por llamada al modelo: tokens, costo, latencia, reintentos y motivo de fin;
+  - por herramienta: argumentos y resultado completo.
+
+  Las trazas no tienen datos personales, porque las herramientas no los devuelven. Langfuse, que ya se usa en el proyecto personal, queda como opción y no como requisito, para que el prototipo corra con pocos comandos.
+
+### 3.10 Línea base con reglas fijas
+
+- **Qué es.** `RuleBasedLLM` (`baseline.py`): un reemplazo del LLM que cumple el mismo protocolo. Pide las mismas herramientas, aplica umbrales fijos y llama a `concluir`.
+- **Para qué sirve.** Dos cosas. Permite correr todo sin clave (`--llm reglas`). Y es la **línea base de la evaluación**: responde "¿el LLM aporta criterio más allá de unas reglas simples?".
+- **Limitación declarada.** Los umbrales se escribieron después de ver el perfil de los 25 casos, así que su desempeño en estos casos es optimista; no prueba que las reglas generalicen.
 
 ## 4. Tecnologías
 

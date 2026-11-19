@@ -81,6 +81,7 @@ class TestGroqClient:
         assert r.latency_ms >= 0
         assert r.finish_reason == "stop"
         assert r.model == DEFAULT_MODEL
+        assert r.retries == 0
 
     def test_sends_the_model_limits_and_tools(self):
         client, requests = client_with(httpx.Response(200, json=completion({"content": "ok"})))
@@ -119,7 +120,9 @@ class TestGroqClient:
             httpx.Response(429, headers={"retry-after-ms": "1"}, json={"error": "rate"}),
             httpx.Response(200, json=completion({"content": "ok"})),
         )
-        assert client.complete(USER).content == "ok"
+        r = client.complete(USER)
+        assert r.content == "ok"
+        assert r.retries == 1
         assert len(requests) == 2
 
     def test_does_not_retry_a_bad_key(self):

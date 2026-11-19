@@ -212,6 +212,7 @@ class _Run:
                 "costo_usd": None if r.cost_usd is None else str(r.cost_usd),
                 "latencia_ms": round(r.latency_ms),
                 "fin": r.finish_reason,
+                "reintentos": r.retries,
                 "texto": r.content,
             }
         )

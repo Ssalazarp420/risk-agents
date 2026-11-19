@@ -226,3 +226,29 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 - **Que el modelo escriba el expediente completo:** podría alterar las métricas o los ids, que ya son correctos.
 
 **Costo de la decisión.** Si el modelo nunca llama a `concluir`, el caso queda `incompleto` al llegar al límite. Se mide en la evaluación.
+
+---
+
+## D-014
+
+**Orquestador con alertas propias, reanudación y escritura atómica; línea base con reglas fijas** · 2026-11-18 · Vigente
+
+**Contexto.** El prototipo tiene que procesar 25 casos y escribir una línea válida por caso. El plan gratuito de Groq tiene límites de tasa, y lo más importante del expediente no puede depender de que el modelo se acuerde de algo.
+
+**Opción elegida.**
+- **Alertas del código, independientes del modelo.** La nota que intenta dar instrucciones (T3) y las cuentas con el mismo dispositivo que faltan en el CSV (T9) las detecta el código. Se agregan al expediente y también se le pasan al agente en el contexto.
+- **Cuentas relacionadas verificadas.** El ensamblador solo conserva las cuentas que `cuentas_relacionadas` devolvió de verdad.
+- **Validación antes de escribir.** Un expediente que no cumple el esquema se escribe como `incompleto` con el error.
+- **Escritura atómica después de cada caso, en el orden del CSV.** Se escribe un archivo temporal y se reemplaza.
+- **Reanudación.** Se conservan los expedientes válidos que no son `incompleto`.
+- **Línea base `RuleBasedLLM`.** Corre sin clave y es el punto de comparación de la evaluación.
+
+**Por qué.**
+- Una corrida de 25 casos contra un proveedor con límites de tasa puede cortarse a mitad. Rehacer solo lo que faltó ahorra tiempo y dinero.
+- Las alertas que importan para el analista no deben depender de la obediencia del modelo: en la primera corrida real, el modelo ignoró una instrucción del prompt (ver [caso de fallo 4](casos_de_fallo.md#4-el-modelo-repite-una-alerta-que-el-prompt-le-pide-no-repetir)).
+
+**Alternativas descartadas.**
+- **Escribir línea por línea al final:** un corte a mitad dejaría el archivo vacío o incompleto.
+- **Agregar líneas sin reescribir el archivo:** al reanudar, el orden ya no sería el del CSV.
+
+**Costo de la decisión.** Las alertas del código y las del agente pueden decir lo mismo con otras palabras. Se acepta: es mejor una alerta repetida que una ausente.

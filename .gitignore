@@ -16,3 +16,6 @@ __pycache__/
 
 # Editor
 .vscode/
+
+# Run outputs; the final delivered run is copied elsewhere on purpose
+salidas/

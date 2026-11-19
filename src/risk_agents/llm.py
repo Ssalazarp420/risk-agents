@@ -71,6 +71,7 @@ class LLMReply:
     latency_ms: float
     cost_usd: Decimal | None
     finish_reason: str | None  # "length" means the output hit MAX_OUTPUT_TOKENS
+    retries: int = 0  # retries the SDK made (429, 5xx...); latency includes their waits
 
     def as_message(self) -> Message:
         """The reply as an assistant message, to append to the conversation history."""
@@ -136,13 +137,15 @@ class GroqClient:
     def complete(self, messages: list[Message], tools: list[dict] | None = None) -> LLMReply:
         extra = {"tools": tools} if tools else {}
         start = time.perf_counter()
-        response = self._client.chat.completions.create(
+        # with_raw_response exposes how many retries the SDK made before succeeding.
+        raw = self._client.chat.completions.with_raw_response.create(
             model=self.model,
             messages=messages,
             max_completion_tokens=self._max_output_tokens,
             reasoning_effort=self._reasoning_effort,
             **extra,
         )
+        response = raw.parse()
         latency_ms = (time.perf_counter() - start) * 1000
         choice = response.choices[0]
         usage = response.usage
@@ -160,6 +163,7 @@ class GroqClient:
             latency_ms=latency_ms,
             cost_usd=cost_usd(self.model, input_tokens, output_tokens) if usage else None,
             finish_reason=choice.finish_reason,
+            retries=raw.retries_taken,
         )
 
 
