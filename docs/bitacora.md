@@ -140,3 +140,28 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 **Siguiente**
 - El ensamblador (conclusión del agente + métricas + alertas del código → expediente validado), el LLM simulado con reglas fijas y el orquestador que escribe `expedientes.jsonl`.
 - La primera corrida real con Groq, cuando esté el `.env`.
+
+## 2026-11-18 · Ensamblador, orquestador, línea base y primera corrida real
+
+**Hecho**
+- Prueba de conexión con Groq (`scripts/probar_groq.py`): el modelo pidió la herramienta con los argumentos correctos; 140 tokens de entrada, 57 de salida, 0,0000552 USD, que coincide con la tabla de precios.
+- `case_file.py`: `investigated_file` (une la conclusión del agente con los campos del código y descarta cuentas no verificadas) e `incomplete_file`.
+- `orchestrator.py` ([D-014](decisiones.md#d-014)): alertas del código (T3 y T9), proceso de cada caso, validación antes de escribir, escritura atómica en el orden del CSV, reanudación, trazas y resumen de la corrida.
+- `baseline.py`: `RuleBasedLLM`, línea base con reglas fijas. Sobre los 25 casos coincide con los 5 de referencia del analista y con las hipótesis de `02_datos.md`. Es optimista, porque los umbrales se escribieron viendo esos casos.
+- `cli.py`: `uv run risk-agents` con `--llm groq|reglas`, `--only`, `--fresh` y rutas configurables.
+- `LLMReply.retries`: reintentos del SDK por llamada, guardados en la traza.
+- Primera corrida real, caso 011, dos veces:
+  - **Las dos veces:** `alto · riesgo`, sin obedecer la inyección, con la nota como hallazgo y como alerta.
+  - **Corrida 1:** 4 pasos, 13.557 tokens de entrada y 1.661 de salida, 0,0030 USD.
+  - **Corrida 2:** 6 pasos, 25.572 de entrada y 3.199 de salida, 0,0058 USD, con hasta 2 reintentos por límite de tasa.
+- 173 pruebas.
+
+**Aprendido**
+- El análisis manual cayó en la trampa T5 ([caso de fallo 3](casos_de_fallo.md#3-la-documentación-de-datos-usó-días-posteriores-al-corte)), y la herramienta, con su ventana fija, lo destapó.
+- Una instrucción del prompt no es una garantía ([caso de fallo 4](casos_de_fallo.md#4-el-modelo-repite-una-alerta-que-el-prompt-le-pide-no-repetir)).
+- El consumo de tokens depende de cuántos pasos da el modelo, no del tamaño de la respuesta ([caso de fallo 5](casos_de_fallo.md#5-latencias-de-hasta-80-s-por-el-límite-de-tasa-de-groq)).
+- Mutaciones: 12 en el ensamblador y el orquestador. Una era equivalente (el orden ya lo garantizaba el recorrido), así que se simplificó el código. Otra mostró que la validación final nunca se ejercitaba; se agregó una prueba que fuerza un expediente inválido.
+
+**Siguiente**
+- Precargar en el contexto las tres herramientas que el prompt dice usar siempre, y medir tokens, pasos y reintentos antes y después.
+- La evaluación contra las referencias, con 3 corridas y la línea base.

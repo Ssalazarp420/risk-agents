@@ -2,7 +2,13 @@
 
 import pytest
 
-from risk_agents.case_file import no_data_file, skipped_file, validate
+from risk_agents.case_file import (
+    incomplete_file,
+    investigated_file,
+    no_data_file,
+    skipped_file,
+    validate,
+)
 from risk_agents.cases import Case
 
 CASE = Case("C-20261101-004", "J103871", "2026-10-31", 0.81)
@@ -62,3 +68,73 @@ class TestValidate:
         file = no_data_file(CASE, [])
         file["fecha_corte"] = bad_date
         assert any(e.startswith("fecha_corte:") for e in validate(file))
+
+
+METRICS = {
+    "depositos_aprobados": 21.6,
+    "retiros_aprobados": 69.02,
+    "monto_apostado": 87.25,
+    "ggr": 7.13,
+    "bonos_otorgados": 43.2,
+    "n_apuestas": 40,
+}
+RING = Case("C-20261101-016", "J101070", "2026-10-31", 0.952)
+CONCLUSION = {
+    "hallazgos": [{"descripcion": "Comparte dispositivo", "evidencia": "cuentas_relacionadas"}],
+    "nivel_preocupacion": "alto",
+    "derivar_a": ["riesgo"],
+    "resumen": "Anillo de cuentas.",
+    "cuentas_relacionadas": ["J101084", "J100146"],
+    "alertas_calidad_datos": ["alerta del agente"],
+}
+
+
+class TestInvestigatedFile:
+    def build(self, conclusion=CONCLUSION, seen=("J101084", "J100146"), alerts=("del código",)):
+        return investigated_file(RING, METRICS, conclusion, frozenset(seen), list(alerts))
+
+    def test_follows_the_schema(self):
+        assert validate(self.build()) == []
+
+    def test_code_fields_come_from_the_code(self):
+        file = self.build()
+        assert file["estado_investigacion"] == "completo"
+        assert file["metricas_90d_usd"] == METRICS
+        assert (file["caso_id"], file["jugador_id"]) == ("C-20261101-016", "J101070")
+
+    def test_judgement_fields_come_from_the_agent(self):
+        file = self.build()
+        for field in ("hallazgos", "nivel_preocupacion", "derivar_a", "resumen"):
+            assert file[field] == CONCLUSION[field]
+
+    def test_accounts_the_tools_never_returned_are_dropped_with_an_alert(self):
+        file = self.build(seen=("J101084",))
+        assert file["cuentas_relacionadas"] == ["J101084"]
+        assert any("J100146" in a and "descart" in a for a in file["alertas_calidad_datos"])
+
+    def test_the_player_cannot_be_related_to_itself_and_repeats_are_removed(self):
+        conclusion = {**CONCLUSION, "cuentas_relacionadas": ["J101084", "J101070", "J101084"]}
+        file = self.build(conclusion=conclusion, seen=("J101084", "J101070"))
+        assert file["cuentas_relacionadas"] == ["J101084"]
+
+    def test_alerts_are_code_first_then_agent_without_repeats(self):
+        conclusion = {**CONCLUSION, "alertas_calidad_datos": ["del código", "del agente"]}
+        file = self.build(conclusion=conclusion)
+        assert file["alertas_calidad_datos"] == ["del código", "del agente"]
+
+
+class TestIncompleteFile:
+    def test_follows_the_schema_and_keeps_the_metrics(self):
+        file = incomplete_file(RING, METRICS, "límite de pasos", ["del código"])
+        assert validate(file) == []
+        assert file["estado_investigacion"] == "incompleto"
+        assert file["metricas_90d_usd"] == METRICS
+        assert file["nivel_preocupacion"] is None
+        assert "límite de pasos" in file["resumen"]
+        assert file["alertas_calidad_datos"][0] == "del código"
+        assert any("límite de pasos" in a for a in file["alertas_calidad_datos"][1:])
+
+    def test_a_very_long_reason_still_fits(self):
+        file = incomplete_file(RING, None, "x" * 2000, [])
+        assert validate(file) == []
+        assert len(file["resumen"]) <= 800

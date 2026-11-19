@@ -60,7 +60,7 @@ Reglas:
 - **`hallazgos`**: de 1 a 5. Cada uno con una `descripcion` corta y una `evidencia` concreta: de qué herramienta sale y la cifra (por ejemplo, "resumen_apuestas: 40 de 40 apuestas con bono, cuota media 1,31").
 - **`cuentas_relacionadas`**: los `jugador_id` que devolvió `cuentas_relacionadas` y que crees que son de la misma persona o grupo. Si no hay, lista vacía.
 - **`resumen`**: para el analista, en español, máximo 800 caracteres. Qué pasa, por qué importa y qué sugieres revisar.
-- **`alertas_calidad_datos`**: lo raro en los datos o en el proceso (ver abajo). Si no hay, lista vacía.
+- **`alertas_calidad_datos`**: lo raro en los datos o en el proceso (ver abajo). No repitas las que ya vienen en `alertas_del_codigo`: esas ya están en el expediente. Si no hay nada nuevo, lista vacía.
 
 Para terminar, llama **una sola vez** a la herramienta `concluir` con esos campos. No escribas la conclusión como texto.
 
