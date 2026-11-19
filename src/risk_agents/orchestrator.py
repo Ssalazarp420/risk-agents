@@ -75,6 +75,7 @@ def code_alerts(case: Case, repo: Repository, missing: dict[str, list[tuple[str,
                 f"Una nota de {tipo} del {first[:10]} intenta dar instrucciones al sistema de"
                 " revisión. Se trató como dato, no como instrucción."
             )
+    alerts += _factor_alerts(case, repo, window)
     missing_scores = dict(missing.get(case.fecha_corte, []))
     linked = sorted({other for other, _ in repo.shared_devices(case.jugador_id, window.end)})
     for other in linked:
@@ -83,6 +84,33 @@ def code_alerts(case: Case, repo: Repository, missing: dict[str, list[tuple[str,
                 f"{other} (score {missing_scores[other]}) comparte dispositivo con este jugador y"
                 " no está en los casos del día: el flujo diario lo dejó fuera."
             )
+    return alerts
+
+
+def _factor_alerts(case: Case, repo: Repository, window) -> list[str]:
+    """Score factors that the data can check objectively and does not support (T8). The model
+    caught these only in some runs (evaluation v2), so the code reports them every time."""
+    scores = repo.score_history(case.jugador_id, case.fecha_corte)
+    if not scores:
+        return []
+    try:
+        factors = json.loads(scores[-1][3] or "[]")
+    except json.JSONDecodeError:
+        return []
+    alerts = []
+    night_bets = repo.bets_by_hour_block(case.jugador_id, window).get(0, 0)
+    total_bets = repo.native_totals(case.jugador_id, window).n_bets
+    if "actividad_nocturna" in factors and total_bets and night_bets == 0:
+        alerts.append(
+            "El score incluye el factor actividad_nocturna, pero el jugador no tiene apuestas"
+            " entre las 0 y las 5 h en la ventana."
+        )
+    withdrawals = repo.native_totals(case.jugador_id, window).withdrawals
+    if "retiro_rapido" in factors and withdrawals == 0:
+        alerts.append(
+            "El score incluye el factor retiro_rapido, pero el jugador no tiene retiros"
+            " aprobados en la ventana."
+        )
     return alerts
 
 

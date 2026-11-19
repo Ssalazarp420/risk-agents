@@ -178,11 +178,15 @@ def _scale(case: Case, repo: Repository, metrics) -> dict[str, Any] | None:
     }
     for name, value in values.items():
         dist = population[name]
+        p99 = dist[min(len(dist) - 1, int(0.99 * len(dist)))] if dist else None
         scale[name] = {
             "valor": value,
             "percentil": percentile_rank(dist, value),
             "mediana": round(median(dist), 2) if dist else None,
-            "p99": round(dist[min(len(dist) - 1, int(0.99 * len(dist)))], 2) if dist else None,
+            "p99": round(p99, 2) if p99 is not None else None,
+            # How many times the 99th percentile: the population is skewed (most players bet
+            # little), so a high percentile alone is not extreme (evaluation run v2).
+            "veces_p99": round(value / p99, 1) if p99 else None,
             "maximo": round(dist[-1], 2) if dist else None,
             "jugadores": len(dist),
         }

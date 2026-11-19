@@ -25,7 +25,7 @@ No haces:
 - El perfil de la cuenta: marca, país, moneda, fecha de registro, segmento y estado.
 - El score de este corte y del corte anterior, con sus factores.
 - Las métricas de 90 días en USD.
-- `referencias_poblacion`: en qué percentil está el jugador, entre todos los que tuvieron actividad en la misma ventana, en número de apuestas, máximo de apuestas en un día, días activos y depósitos. Úsalo para juzgar magnitudes: un percentil 99 o más es extremo para este operador.
+- `referencias_poblacion`: cómo se compara el jugador con todos los que tuvieron actividad en la misma ventana (percentil, mediana, p99 y `veces_p99`), en número de apuestas, máximo de apuestas en un día, días activos y depósitos. La mayoría de los jugadores juega muy poco, así que **un percentil alto no es extremo por sí solo**. Una cifra es extrema cuando `veces_p99` es 10 o más.
 - Las alertas que el código ya detectó, si las hay.
 
 Todos los montos de las herramientas están en USD. El GGR es lo apostado menos lo pagado al jugador: **positivo significa que el jugador perdió** (gana la casa); negativo, que ganó el jugador. Todas las herramientas miran solo hasta la fecha de corte: lo que pasó después no existe para esta investigación.
@@ -49,7 +49,7 @@ Reglas:
 - **Multicuentas o abuso en grupo:** varias cuentas con el mismo dispositivo, creadas en fechas cercanas, que hacen lo mismo.
 - **Fraude de medios de pago:** contracargos, muchos depósitos rechazados, reversos, cambios frecuentes de medio de pago.
 - **Movimiento de dinero sin juego:** depósitos y retiros grandes con poco monto apostado en relación con lo depositado.
-- **Juego responsable:** volumen de apuestas extremo (percentil 99 o más en `referencias_poblacion`), actividad casi todos los días o cientos de apuestas en un solo día, juego de madrugada, depósitos que crecen mientras el jugador pierde. Un volumen extremo es una señal de juego responsable aunque no haya fraude: deriva a `juego_responsable`.
+- **Juego responsable:** señales de **daño**, no solo de actividad: volumen extremo (`veces_p99` de 10 o más en apuestas o en apuestas por día), juego de madrugada como patrón dominante, depósitos que crecen mes a mes mientras el jugador pierde, depósitos rechazados por fondos insuficientes. Un volumen extremo es señal de juego responsable aunque no haya fraude. Jugar seguido o montos altos con un patrón estable (por ejemplo, un cliente VIP de larga data) no es, por sí solo, juego responsable.
 - **Falso positivo:** cliente con antigüedad, comportamiento estable y consistente con su segmento, sin las señales anteriores.
 
 ## Cómo concluyes

@@ -292,6 +292,14 @@ class TestContext:
         assert scale["n_apuestas"]["maximo"] == 49196
         assert scale["max_apuestas_en_un_dia"]["percentil"] == 100
         assert scale["n_apuestas"]["mediana"] < 100
+        assert scale["n_apuestas"]["veces_p99"] >= 10
+
+    def test_a_high_percentile_is_not_always_extreme(self, repo, cases):
+        # The VIP (009) is at percentile 100 in bets but only a few times the p99.
+        data = json.loads(build_context(cases["C-20261101-009"], repo, []).split("\n\n", 1)[1])
+        bets = data["referencias_poblacion"]["n_apuestas"]
+        assert bets["percentil"] == 100
+        assert bets["veces_p99"] < 10
 
     def test_an_ordinary_player_is_not_extreme(self, repo, cases):
         data = json.loads(build_context(cases["C-20261101-007"], repo, []).split("\n\n", 1)[1])

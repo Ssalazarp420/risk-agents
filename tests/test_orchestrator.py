@@ -157,6 +157,10 @@ class TestCodeAlerts:
             alerts = " ".join(by_id[caso_id])
             assert "J100146" in alerts and "J100563" in alerts
 
+    def test_score_factors_the_data_does_not_support(self, by_id):
+        assert any("actividad_nocturna" in a for a in by_id["C-20261101-025"])
+        assert any("retiro_rapido" in a for a in by_id["C-20261101-002"])
+
     def test_normal_cases_get_no_alerts(self, by_id):
         assert by_id["C-20261101-009"] == []
         assert by_id["C-20261101-007"] == []
