@@ -24,11 +24,11 @@ _PATTERNS = re.compile(
 )
 
 
-def _plain(text: str) -> str:
+def normalize(text: str) -> str:
     """Lowercase without accents, so 'PREOCUPACIÓN' and 'preocupacion' look the same."""
     decomposed = unicodedata.normalize("NFKD", text.casefold())
     return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
 def looks_like_instruction(text: str) -> bool:
-    return bool(_PATTERNS.search(_plain(text)))
+    return bool(_PATTERNS.search(normalize(text)))

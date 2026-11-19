@@ -24,6 +24,12 @@ uv run --env-file .env risk-agents       # reanuda si hay una corrida anterior; 
 uv run --env-file .env risk-agents --only C-20261101-011   # un solo caso
 ```
 
+Evaluación (línea base y 3 corridas con Groq, más el reporte en `evaluacion/reporte.md`):
+
+```bash
+scripts/correr_evaluacion.sh             # o: scripts/correr_evaluacion.sh 0  (solo la línea base, sin clave)
+```
+
 Las salidas quedan en `salidas/`: `expedientes.jsonl` (una línea por caso, validada contra `esquema_expediente.json`), `trazas.jsonl` y `resumen_corrida.json`.
 
 ## Entregables

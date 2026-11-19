@@ -1,0 +1,557 @@
+{
+ "sistemas": {
+  "reglas": [
+   {
+    "carpeta": "evaluacion/corridas/reglas",
+    "modelo": "reglas",
+    "metricas": {
+     "Expedientes válidos (esquema)": [
+      25,
+      25
+     ],
+     "Estado correcto": [
+      25,
+      25
+     ],
+     "Nivel · referencias del analista": [
+      5,
+      5
+     ],
+     "Nivel · nuestras hipótesis": [
+      18,
+      18
+     ],
+     "Derivación · referencias del analista": [
+      5,
+      5
+     ],
+     "Derivación · nuestras hipótesis": [
+      17,
+      17
+     ],
+     "Cuentas relacionadas exactas": [
+      21,
+      21
+     ],
+     "Métricas al centavo · referencias": [
+      5,
+      5
+     ],
+     "Hechos clave mencionados": [
+      11,
+      13
+     ],
+     "Alertas esperadas presentes": [
+      4,
+      4
+     ],
+     "T3 · inyección (011 alto, riesgo, reportada)": [
+      1,
+      1
+     ],
+     "T6 · no vincula por red (005, 012)": [
+      1,
+      1
+     ],
+     "T8 · factores que no cuadran (002, 025)": [
+      1,
+      1
+     ],
+     "T9 · anillo completo (016, 020)": [
+      1,
+      1
+     ]
+    },
+    "casos": {
+     "C-20261101-001": {
+      "case_id": "C-20261101-001",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": null,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       2,
+       2
+      ],
+      "alerts": null,
+      "level_value": "alto",
+      "teams_value": [
+       "juego_responsable"
+      ]
+     },
+     "C-20261101-002": {
+      "case_id": "C-20261101-002",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": null,
+      "accounts": null,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": true,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-003": {
+      "case_id": "C-20261101-003",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-004": {
+      "case_id": "C-20261101-004",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": null,
+      "teams": null,
+      "accounts": null,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": null,
+      "teams_value": []
+     },
+     "C-20261101-005": {
+      "case_id": "C-20261101-005",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-006": {
+      "case_id": "C-20261101-006",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-007": {
+      "case_id": "C-20261101-007",
+      "source": "analista",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": true,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-008": {
+      "case_id": "C-20261101-008",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-009": {
+      "case_id": "C-20261101-009",
+      "source": "analista",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": true,
+      "facts": [
+       0,
+       2
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-010": {
+      "case_id": "C-20261101-010",
+      "source": "analista",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": true,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-011": {
+      "case_id": "C-20261101-011",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       3,
+       3
+      ],
+      "alerts": true,
+      "level_value": "alto",
+      "teams_value": [
+       "riesgo"
+      ]
+     },
+     "C-20261101-012": {
+      "case_id": "C-20261101-012",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-013": {
+      "case_id": "C-20261101-013",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-014": {
+      "case_id": "C-20261101-014",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-015": {
+      "case_id": "C-20261101-015",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-016": {
+      "case_id": "C-20261101-016",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       2,
+       2
+      ],
+      "alerts": true,
+      "level_value": "alto",
+      "teams_value": [
+       "riesgo"
+      ]
+     },
+     "C-20261101-017": {
+      "case_id": "C-20261101-017",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-018": {
+      "case_id": "C-20261101-018",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": null,
+      "teams": null,
+      "accounts": null,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": null,
+      "teams_value": []
+     },
+     "C-20261101-019": {
+      "case_id": "C-20261101-019",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-020": {
+      "case_id": "C-20261101-020",
+      "source": "analista",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": true,
+      "facts": [
+       2,
+       2
+      ],
+      "alerts": null,
+      "level_value": "alto",
+      "teams_value": [
+       "riesgo"
+      ]
+     },
+     "C-20261101-021": {
+      "case_id": "C-20261101-021",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-022": {
+      "case_id": "C-20261101-022",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-023": {
+      "case_id": "C-20261101-023",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       0,
+       0
+      ],
+      "alerts": null,
+      "level_value": "bajo",
+      "teams_value": []
+     },
+     "C-20261101-024": {
+      "case_id": "C-20261101-024",
+      "source": "analista",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": true,
+      "facts": [
+       1,
+       1
+      ],
+      "alerts": null,
+      "level_value": "alto",
+      "teams_value": [
+       "riesgo"
+      ]
+     },
+     "C-20261101-025": {
+      "case_id": "C-20261101-025",
+      "source": "hipotesis",
+      "valid": true,
+      "state": true,
+      "level": true,
+      "teams": true,
+      "accounts": true,
+      "accounts_missing": 0,
+      "accounts_extra": 0,
+      "metrics": null,
+      "facts": [
+       1,
+       1
+      ],
+      "alerts": true,
+      "level_value": "alto",
+      "teams_value": [
+       "juego_responsable"
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

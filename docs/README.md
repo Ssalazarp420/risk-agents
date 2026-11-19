@@ -7,6 +7,7 @@ Mapa de los documentos del proyecto. Explican el problema, los datos, el diseño
 | [01_contexto.md](01_contexto.md) | El problema del negocio, qué piden las tres partes de la prueba y cómo se evalúa |
 | [02_datos.md](02_datos.md) | Las tablas, cómo se relacionan, las reglas confirmadas, la calidad de los datos, las trampas y el perfil de cada caso |
 | [03_arquitectura.md](03_arquitectura.md) | Cómo está armado el prototipo: cada componente, para qué sirve y cómo se usa |
+| [../evaluacion/reporte.md](../evaluacion/reporte.md) | El reporte de evaluación generado: métricas por sistema y por corrida, costo y caso por caso |
 | [decisiones.md](decisiones.md) | Cada decisión y supuesto, con el contexto y el porqué |
 | [casos_de_fallo.md](casos_de_fallo.md) | Fallos reales del agente, el código, el proveedor o la evaluación: qué pasó, por qué y qué se hizo |
 | [bitacora.md](bitacora.md) | Qué se hizo cada día, qué se aprendió y qué falló |

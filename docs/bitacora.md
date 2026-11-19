@@ -182,3 +182,16 @@ Qué se hizo cada día, qué se aprendió y qué falló.
 
 **Siguiente**
 - Evaluación contra las referencias y contra las hipótesis: 3 corridas del modelo más la línea base. Después, probar la referencia de magnitudes para el 025 y volver a medir.
+
+## 2026-11-18 · Evaluación: el evaluador y la línea base
+
+**Hecho**
+- Límites de la cuenta de Groq, leídos en las cabeceras y confirmados en la documentación: 8.000 tokens por minuto, 1.000 solicitudes por día y 200.000 tokens por día. Una corrida completa de 23 casos usa del orden de ese tope diario, así que las 3 corridas se harán con el plan Developer (decisión del autor).
+- `evaluacion/esperado.json`: lo esperado para los 25 casos. Las 5 referencias del analista se leen del archivo oficial; los otros 20 son nuestra lectura, con márgenes.
+- `evaluation.py` y `uv run risk-agents-eval` ([D-016](decisiones.md#d-016)): puntúa cada caso y cada corrida, agrupa corridas por sistema con rangos y consistencia, y genera `evaluacion/reporte.md` y `.json`.
+- `scripts/correr_evaluacion.sh`: la línea base, N corridas de Groq y el reporte, con un comando.
+- Línea base evaluada: 25/25 válidos, 5/5 contra el analista en nivel y derivación, las 4 trampas y 11 de 13 hechos clave. Es un techo optimista, porque las reglas se escribieron viendo estos casos.
+- 194 pruebas.
+
+**Siguiente**
+- Las 3 corridas con Groq cuando el plan Developer esté activo; después, el análisis de diferencias y la prueba de la corrección del caso 025.

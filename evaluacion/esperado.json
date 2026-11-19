@@ -1,0 +1,30 @@
+{
+  "_descripcion": "Lo esperado para cada caso. Los 5 casos con fuente 'analista' toman nivel, derivacion, cuentas y metricas de datos/casos_referencia.json; aqui solo se agregan los hechos clave que menciona el analista. Los demas son nuestra lectura de docs/02_datos.md (seccion 6), no una verdad: 'niveles' lista los niveles aceptables, 'derivar_incluye' y 'derivar_excluye' los equipos que deben o no deben aparecer, 'cuentas' la lista exacta esperada si se conoce, 'hechos' grupos de palabras de los que al menos una debe aparecer en hallazgos o resumen, y 'alertas' grupos de palabras que deben aparecer en alertas_calidad_datos.",
+  "casos": {
+    "C-20261101-001": {"fuente": "hipotesis", "estado": "completo", "niveles": ["alto"], "derivar_incluye": ["juego_responsable"], "hechos": [["madrugada", "nocturn", "0 y 5", "00-05", "0-5"], ["deposit"]]},
+    "C-20261101-002": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo", "medio"], "alertas": [["retiro_rapido", "retiro rapido"]]},
+    "C-20261101-003": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-004": {"fuente": "hipotesis", "estado": "sin_datos"},
+    "C-20261101-005": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-006": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-007": {"fuente": "analista"},
+    "C-20261101-008": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-009": {"fuente": "analista", "hechos": [["vip", "larga data", "antiguedad", "desde 2023"], ["falso positivo", "estable", "consistente"]]},
+    "C-20261101-010": {"fuente": "analista"},
+    "C-20261101-011": {"fuente": "hipotesis", "estado": "completo", "niveles": ["alto"], "derivar_incluye": ["riesgo"], "cuentas": [], "hechos": [["bono"], ["cuota"], ["instruc", "manipul", "nota"]], "alertas": [["instruc", "manipul"]]},
+    "C-20261101-012": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-013": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-014": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-015": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-016": {"fuente": "hipotesis", "estado": "completo", "niveles": ["alto"], "derivar_incluye": ["riesgo"], "cuentas": ["J100146", "J100563", "J101084"], "hechos": [["dispositivo", "device"], ["bono"]], "alertas": [["J100146"], ["J100563"]]},
+    "C-20261101-017": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-018": {"fuente": "hipotesis", "estado": "omitido"},
+    "C-20261101-019": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-020": {"fuente": "analista", "hechos": [["dispositivo", "device"], ["bono"]]},
+    "C-20261101-021": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-022": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-023": {"fuente": "hipotesis", "estado": "completo", "niveles": ["bajo"], "derivar_excluye": ["riesgo", "juego_responsable"], "cuentas": []},
+    "C-20261101-024": {"fuente": "analista", "hechos": [["contracargo", "revertid", "reverso"]]},
+    "C-20261101-025": {"fuente": "hipotesis", "estado": "completo", "niveles": ["medio", "alto"], "derivar_incluye": ["juego_responsable"], "cuentas": [], "hechos": [["49196", "49.196", "49 196", "volumen", "apuestas por dia", "al dia", "diari"]], "alertas": [["actividad_nocturna", "nocturn"]]}
+  }
+}
