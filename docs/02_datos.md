@@ -145,6 +145,7 @@ Estas reglas se validaron reproduciendo **exactamente** las métricas de los 5 c
 | `monto_apostado` y `n_apuestas` incluyen las apuestas con y sin bono | Coincide |
 | `bonos_otorgados` usa `fecha_otorgado` dentro de la ventana, en cualquier estado | Coincide |
 | Se suma en la moneda original, se multiplica por `usd_por_unidad` y se redondea a 2 decimales | Coincide al centavo |
+| El GGR se redondea **después** de restar, no cada lado por separado | Redondeando cada lado, el caso 020 se desvía un centavo (prueba `test_reproduces_the_analyst_metrics`) |
 | Las fechas se comparan como texto (`AAAA-MM-DD HH:MM:SS` ordena bien) y están en hora local de cada marca | Todas las fechas tienen el formato correcto; no hay que convertir zonas horarias porque cada jugador solo opera en su marca |
 
 ---
@@ -192,7 +193,7 @@ Métricas en USD sobre la ventana de 90 días. La columna **Hipótesis** es nues
 | 022 | J102645 | B | 73,13 | 97,30 | 285,40 | 80,01 | 42,50 | 17 | Bono de bienvenida 19 meses después del registro (igual que el caso 007, que el analista dejó en bajo) | Bajo |
 | 023 | J102102 | B | 91,78 | 44,12 | 85,02 | −46,21 | 13,69 | 20 | Un depósito en efectivo rechazado | Bajo |
 | 024 ★ | J101722 | B | 752,72 | 916,96 | 2.225,59 | −229,27 | 0 | 80 | Cuenta de julio; **5 de 8** depósitos con tarjeta revertidos por contracargo; retiró antes de los reversos | Alto · riesgo (analista: alto) |
-| 025 | J101220 | A | 18.431,99 | 5.243,48 | 54.152,62 | 2.470,88 | 0 | **49.196** | Registrada en enero de 2025; inicia sesión desde abril (inicio de los datos), pero no deposita ni apuesta hasta el 5 de agosto de 2026. Desde entonces, ~600 giros de slots diarios entre las 12:00 y las 24:00, 97 días seguidos sin descanso | **Medio o alto · riesgo y juego responsable** |
+| 025 | J101220 | A | 18.431,99 | 5.243,48 | 54.152,62 | 2.470,88 | 0 | **49.196** | Registrada en enero de 2025; inicia sesión desde abril (inicio de los datos), pero no deposita ni apuesta hasta el 5 de agosto de 2026. Desde entonces, ~600 giros de slots diarios entre las 12:00 y las 24:00, los 88 días hasta el corte sin descanso | **Medio o alto · riesgo y juego responsable** |
 
 ### El anillo de cuentas (casos 016 y 020)
 

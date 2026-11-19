@@ -185,6 +185,17 @@ def main() -> None:
     ):
         print(row)
 
+    section("Caso 025 (J101220): días con apuestas, hasta el corte y con todos los datos")
+    for label, until in (("hasta el corte", "2026-10-31 23:59:59"), ("todos", "9999")):
+        print(
+            label,
+            db.execute(
+                "select count(distinct substr(fecha_hora, 1, 10)), min(fecha_hora),"
+                " max(fecha_hora) from apuestas where jugador_id = 'J101220' and fecha_hora <= ?",
+                (until,),
+            ).fetchone(),
+        )
+
     section("Métricas propias contra los casos de referencia (90 y 91 días)")
     for ref in json.loads(REFERENCE.read_text()):
         for days in (90, 91):

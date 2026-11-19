@@ -1,0 +1,20 @@
+{
+  "modelo": "reglas",
+  "por_estado": {
+    "completo": 23,
+    "sin_datos": 1,
+    "omitido": 1
+  },
+  "por_nivel": {
+    "alto": 6,
+    "bajo": 17
+  },
+  "investigados_en_esta_corrida": 23,
+  "tokens_entrada": 0,
+  "tokens_salida": 0,
+  "costo_usd": "0",
+  "segundos": 0.6,
+  "alertas_del_lote": [
+    "Jugadores con score en el rango de los casos del corte 2026-10-31 que no están en casos_del_dia.csv: J100146 (0.958), J100563 (0.91)."
+  ]
+}

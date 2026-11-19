@@ -136,3 +136,187 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 **Por qué.** Son pocas líneas, sin dependencias extra para el revisor, y se puede leer y revisar completo. El enunciado dice que pesa más el diseño que el framework.
 
 **Costo de la decisión.** La reanudación y los reintentos hay que escribirlos a mano; para 25 casos basta con saltar los casos que ya están en el JSONL.
+
+---
+
+## D-010
+
+**Una fila malformada del CSV detiene la corrida; un caso con datos raros no** · 2026-11-18 · Vigente
+
+**Contexto.** Hay dos clases de problema en la entrada. Uno es que el archivo de casos no se pueda leer (falta una columna, un score no es un número, una fecha no es `AAAA-MM-DD`). El otro es que el archivo se lea bien pero un caso no cuadre con la base (jugador inexistente, duplicado, score distinto).
+
+**Opción elegida.**
+- **Archivo ilegible**: `CaseFileError` con la línea y el campo, y la corrida no empieza. No se gasta ningún token.
+- **Caso que no cuadra**: el caso sigue su curso con el estado que corresponde (`sin_datos`, `omitido` o investigado con alerta), y los demás casos no se ven afectados.
+
+**Por qué.** Sin un `caso_id` o una fecha válidos no se puede escribir un expediente que cumpla el esquema, y "arreglar" la fila sería adivinar. En cambio, un caso que no cuadra con la base es justamente lo que el analista necesita saber, y se puede reportar dentro del formato.
+
+---
+
+## D-011
+
+**Herramientas del agente: el código fija la ventana y el alcance; el modelo solo elige filtros acotados** · 2026-11-18 · Vigente
+
+**Contexto.** El agente necesita ver la actividad del jugador para razonar. Tres riesgos marcan el diseño:
+- leer datos posteriores al corte (T5);
+- llenar el contexto con miles de filas (T4);
+- exponer datos personales o seguir instrucciones escritas en las notas (T3, T7).
+
+**Opción elegida.** Cinco herramientas en `tools.py`: `resumen_transacciones`, `resumen_apuestas`, `bonos`, `cuentas_relacionadas` y `detalle_transacciones`.
+- **Ventana fija.** Las fechas salen del caso (90 días hasta el corte). Ninguna herramienta acepta fechas, así que el modelo no puede pedir datos de noviembre aunque lo intente. `cuentas_relacionadas` mira todo el historial de dispositivos **hasta** el corte, no solo la ventana, porque un dispositivo compartido meses antes sigue siendo evidencia.
+- **Alcance que crece con la evidencia.** Al empezar, el modelo solo puede consultar al jugador del caso. Las cuentas que devuelve `cuentas_relacionadas` quedan habilitadas para las demás herramientas. Pedir cualquier otro `jugador_id` devuelve un error.
+- **Salida acotada.** Las herramientas devuelven agregados y listas con tope: 10 notas de hasta 300 caracteres, 30 bonos, 20 cuentas y 20 filas de detalle.
+- **Vinculación solo por `device_id`.** La red se informa como un conteo (`red_1: 3 otros jugadores`) con un aviso de que es una señal débil. Los valores de `ip_red` no salen de la herramienta.
+- **Notas como texto de terceros.** Cada nota va en el campo `texto_de_terceros`, con un aviso que dice que es un dato y no una instrucción, y una marca `parece_instruccion` calculada en código con patrones (`untrusted.py`).
+- **Errores que se pueden corregir.** Una herramienta inexistente, un argumento de más, un valor fuera de rango o un JSON inválido devuelven `{"error": ...}` con un mensaje que explica cómo corregir la llamada. Los argumentos se validan con el mismo JSON Schema que se le da al modelo. Cualquier otra excepción es un defecto del código: no se esconde y llega al orquestador.
+
+**Por qué.**
+- Las reglas que importan (fecha de corte, datos personales, alcance) quedan garantizadas por el código, no por que el modelo las cumpla.
+- La marca de inyección no depende del modelo: el código puede reportar la alerta aunque el modelo no lo haga.
+
+**Alternativas descartadas.**
+- **Una herramienta de SQL libre.** Le daría al modelo todo el poder de la base, incluidos los datos personales y las fechas posteriores al corte.
+- **Que el modelo elija las fechas.** Es más flexible, pero abre la fuga de información (T5) y los resultados dejan de ser comparables con las métricas.
+
+**Costo de la decisión.**
+- El agente no puede mirar fuera de la ventana de 90 días, salvo los dispositivos. Si un caso lo necesitara, habría que agregar una herramienta específica.
+- El detector de inyección es una heurística: atrapa los intentos evidentes, no todos. Por eso es una capa más, sumada al aviso, al prompt y a la marca en alertas, y no la única defensa.
+
+---
+
+## D-012
+
+**Cliente del LLM síncrono, con tipos propios y reintentos del SDK** · 2026-11-18 · Vigente
+
+**Contexto.** El proyecto personal tiene un cliente asíncrono con soporte para varios proveedores, pensado para servicios A2A concurrentes. Aquí hay 25 casos, un proveedor y el límite de tasa del plan gratuito de Groq.
+
+**Opción elegida.**
+- **Síncrono.** Los casos se procesan en secuencia. Con el límite de tokens por minuto de Groq, procesarlos en paralelo no los terminaría antes; solo provocaría más errores 429.
+- **Tipos propios** (`LLMReply`, `ToolCall`, el protocolo `ChatModel`). El bucle del agente no ve los objetos del SDK, así que el LLM simulado es una clase de pocas líneas y cambiar de proveedor no toca el bucle.
+- **Reintentos del SDK** (`max_retries=4`). El SDK de `openai` ya reintenta 408, 409, 429 y 5xx con espera exponencial y respeta la cabecera `retry-after` hasta 2 minutos. Una prueba lo comprueba con un 429 seguido de un 200.
+- **Clave por variable de entorno**, cargada con `uv run --env-file .env`. No se agrega `python-dotenv` ni `pydantic-settings`.
+- **`reasoning_effort="medium"` y un tope de 4.096 tokens de salida.** `gpt-oss` razona antes de responder y esos tokens cuentan como salida. El tope limita el costo de una salida descontrolada; si se alcanza, `finish_reason` es `"length"` y el bucle lo tratará como fallo.
+- **Temperatura por defecto.** La variabilidad se mide en la evaluación (3 corridas) en vez de esconderla.
+
+**Por qué.** Es el diseño más simple que cubre lo que pide el prototipo, y cada parte se puede probar sin red.
+
+**Costo de la decisión.** Si hubiera miles de casos, haría falta concurrencia con control de tasa (está en la propuesta de la Parte 2). El precio por token está copiado a mano de la página de Groq y hay que revisarlo si cambia.
+
+---
+
+## D-013
+
+**El agente concluye llamando a una herramienta `concluir`, validada con JSON Schema** · 2026-11-18 · Vigente
+
+**Contexto.** El expediente tiene que cumplir un esquema estricto, y la mitad de sus campos los pone el código (ids, estado, métricas). Del modelo solo se necesita el juicio: hallazgos, nivel, derivación, resumen, cuentas relacionadas y alertas.
+
+**Opción elegida.**
+- **Conclusión como herramienta.** El modelo termina llamando a `concluir`. Sus parámetros son un JSON Schema con solo los campos que le tocan. El esquema es más estricto que el oficial en lo que importa: entre 1 y 5 hallazgos con evidencia no vacía, un nivel obligatorio (`null` no se permite) y un resumen de 1 a 800 caracteres.
+- **Una conclusión inválida vuelve al modelo** con los errores, como cualquier herramienta mal llamada. Gasta un paso, no el caso.
+- **El prompt de la Parte 1 es el archivo que usa el código** (`prompts/investigador_riesgo.md`), no una copia en un documento: lo que se entrega es lo que se probó.
+- **Límite de 10 llamadas al modelo** por caso. Las herramientas se pueden pedir varias a la vez, y el prompt pide de 4 a 7, así que queda margen para una o dos correcciones.
+- **Toda excepción deja el caso `incompleto`** con el tipo y el mensaje en el resultado y en la traza. La corrida sigue con el siguiente caso.
+
+**Por qué.**
+- Con herramientas, el formato de salida usa el mismo mecanismo que el resto del bucle: un solo camino, validado igual y que se prueba igual.
+- Combinar herramientas con el modo de salida estructurada (`response_format`) en la misma conversación depende del proveedor; la herramienta funciona en cualquier API compatible con OpenAI.
+
+**Alternativas descartadas.**
+- **Pedir JSON en el texto final y parsearlo:** más frágil (texto alrededor, comillas) y sin validación del lado del proveedor.
+- **Que el modelo escriba el expediente completo:** podría alterar las métricas o los ids, que ya son correctos.
+
+**Costo de la decisión.** Si el modelo nunca llama a `concluir`, el caso queda `incompleto` al llegar al límite. Se mide en la evaluación.
+
+---
+
+## D-014
+
+**Orquestador con alertas propias, reanudación y escritura atómica; línea base con reglas fijas** · 2026-11-18 · Vigente
+
+**Contexto.** El prototipo tiene que procesar 25 casos y escribir una línea válida por caso. El plan gratuito de Groq tiene límites de tasa, y lo más importante del expediente no puede depender de que el modelo se acuerde de algo.
+
+**Opción elegida.**
+- **Alertas del código, independientes del modelo.** La nota que intenta dar instrucciones (T3) y las cuentas con el mismo dispositivo que faltan en el CSV (T9) las detecta el código. Se agregan al expediente y también se le pasan al agente en el contexto.
+- **Cuentas relacionadas verificadas.** El ensamblador solo conserva las cuentas que `cuentas_relacionadas` devolvió de verdad.
+- **Validación antes de escribir.** Un expediente que no cumple el esquema se escribe como `incompleto` con el error.
+- **Escritura atómica después de cada caso, en el orden del CSV.** Se escribe un archivo temporal y se reemplaza.
+- **Reanudación.** Se conservan los expedientes válidos que no son `incompleto`.
+- **Línea base `RuleBasedLLM`.** Corre sin clave y es el punto de comparación de la evaluación.
+
+**Por qué.**
+- Una corrida de 25 casos contra un proveedor con límites de tasa puede cortarse a mitad. Rehacer solo lo que faltó ahorra tiempo y dinero.
+- Las alertas que importan para el analista no deben depender de la obediencia del modelo: en la primera corrida real, el modelo ignoró una instrucción del prompt (ver [caso de fallo 4](casos_de_fallo.md#4-el-modelo-repite-una-alerta-que-el-prompt-le-pide-no-repetir)).
+
+**Alternativas descartadas.**
+- **Escribir línea por línea al final:** un corte a mitad dejaría el archivo vacío o incompleto.
+- **Agregar líneas sin reescribir el archivo:** al reanudar, el orden ya no sería el del CSV.
+
+**Costo de la decisión.** Las alertas del código y las del agente pueden decir lo mismo con otras palabras. Se acepta: es mejor una alerta repetida que una ausente.
+
+---
+
+## D-015
+
+**El código precarga las tres herramientas que se usan en todos los casos** · 2026-11-18 · Vigente
+
+**Contexto.** En la primera corrida real, el modelo pidió las herramientas de a una, aunque el prompt le pedía pedirlas juntas. Cada paso reenvía toda la conversación, y el plan gratuito de Groq limita los tokens por minuto: hubo reintentos de hasta 80 s ([caso de fallo 5](casos_de_fallo.md#5-latencias-de-hasta-80-s-por-el-límite-de-tasa-de-groq)).
+
+**Opción elegida.** Antes de la primera llamada al modelo, el código ejecuta `cuentas_relacionadas`, `resumen_transacciones` y `resumen_apuestas` del jugador del caso. Los resultados entran al historial con el mismo formato que si el modelo los hubiera pedido: un mensaje `assistant` con las llamadas y sus resultados `tool`. En la traza quedan marcados como `precargada`. El prompt dice que ya están y que no hay que pedirlos otra vez. El modelo sigue decidiendo si pide `bonos`, `detalle_transacciones` o las herramientas de las cuentas relacionadas.
+
+**Por qué.** Esas tres herramientas se usan en el 100 % de los casos, así que pedirlas no requiere criterio, solo gasta pasos. Con el mismo formato de mensajes, el modelo no necesita instrucciones nuevas, y la línea base de reglas funciona igual.
+
+**Medición** (Groq, `openai/gpt-oss-120b`; una corrida por caso, así que es indicativa; la evaluación la repite):
+
+| Caso | Sin precarga | Con precarga |
+|---|---|---|
+| 011 | 4 pasos, 13.557 tokens de entrada, 0,0030 USD; 6 pasos, 25.572 tokens, 0,0058 USD | 2 pasos, 8.914 tokens, 0,0025 USD |
+| 016 | — | 3 pasos, 13.192 tokens, 0,0031 USD |
+| 025 | — | 1 paso, 3.745 tokens, 0,0013 USD |
+
+**Costo de la decisión.** Se pagan las tres herramientas aunque un caso no las necesitara. Son consultas locales de milisegundos y salidas de pocos miles de caracteres.
+
+---
+
+## D-016
+
+**Evaluación con dos fuentes separadas, tres corridas y la línea base como punto de comparación** · 2026-11-18 · Vigente
+
+**Contexto.** Solo hay 5 expedientes del analista. Con 5 casos no se ve si el agente falla en las trampas (inyección, red compartida, factores del score, anillo) ni en los casos claros que no tienen referencia (por ejemplo, el 025). Además, el modelo no es determinista.
+
+**Opción elegida.**
+- **Dos fuentes, nunca mezcladas:** los 5 casos del analista se comparan de forma exacta; los otros 20, contra nuestras hipótesis de `02_datos.md` (`evaluacion/esperado.json`), con márgenes donde la lectura es ambigua.
+- **Chequeos por trampa** como filas propias del reporte.
+- **3 corridas** del modelo con `--fresh`, reportando el rango de cada métrica y la consistencia entre corridas.
+- **La línea base de reglas** se evalúa con el mismo código.
+- **Todo reproducible:** las corridas se guardan en `evaluacion/corridas/` y el reporte se genera con un comando; ninguna cifra del análisis se escribe a mano.
+
+**Por qué.** Las hipótesis amplían la cobertura sin presentarse como verdad. La línea base pone en contexto el resultado del modelo: un 5/5 contra el analista no dice mucho si 7 reglas también lo logran. La diferencia útil está en los casos que las reglas no anticipan y en la calidad de la explicación.
+
+**Alternativas descartadas.**
+- **LLM como juez del resumen:** agrega un segundo modelo no determinista para evaluar al primero; con 5 referencias, los hechos clave por palabras son más auditables.
+- **Embeddings:** quedan como opción ([D-007](decisiones.md#d-007)).
+
+**Costo de la decisión.** Las hipótesis son nuestras: si están mal, el reporte castiga al modelo por discrepar con nosotros. Por eso cada diferencia se revisa a mano antes de llamarla error.
+
+---
+
+## D-017
+
+**Calibración del juicio: referencias de magnitud calculadas por el código, definiciones estrictas y alertas de factores en código** · 2026-11-18 · Vigente
+
+**Contexto.** La evaluación v1 mostró sobre-escalamiento ([caso de fallo 8](casos_de_fallo.md#8-evaluación-v1-casos-normales-escalados-a-medio)) y el 025 sin juego responsable ([caso 6](casos_de_fallo.md#6-el-caso-025-sin-señal-de-juego-responsable-y-con-un-factor-del-score-mal-leído)). La primera corrección (v2) introdujo otro error ([caso 9](casos_de_fallo.md#9-evaluación-v2-el-percentil-escaló-al-vip-a-juego-responsable)).
+
+**Opción elegida (v3, completada en v4).**
+- **Referencias de magnitud calculadas por el código** (`referencias_poblacion`): percentil, mediana, p99, `veces_p99` y máximo, entre los jugadores con actividad en la misma ventana, para apuestas, apuestas por día, días activos y depósitos.
+- **Definiciones estrictas en el prompt:**
+  - "medio" exige una señal concreta;
+  - sin señales, el nivel es "bajo" aunque el score sea alto;
+  - hay una lista de comportamientos normales que no son señal;
+  - se recuerda el signo del GGR;
+  - "extremo" significa 10× el p99 o más, y desde la v4 el código lo marca en cada cifra (`extremo: true/false`), porque en una corrida el modelo ignoró el umbral;
+  - juego responsable exige señales de daño.
+- **Alertas del código** para los factores del score que se pueden comprobar.
+
+**Por qué.** Mantiene la división del trabajo: el código calcula las referencias y las comprobaciones objetivas, y el modelo juzga con ellas.
+
+**Limitación declarada.** Las versiones v2 y v3 se ajustaron **viendo los resultados de la evaluación** sobre estos mismos 25 casos. Las correcciones son generales (definiciones y referencias, nada que nombre un caso), pero los 5 casos del analista ya no son una medición independiente. El umbral de 10× sale de la distribución de este operador. Con más datos, habría que validar en casos nuevos, revisados por humanos, antes de dar el resultado por bueno.
