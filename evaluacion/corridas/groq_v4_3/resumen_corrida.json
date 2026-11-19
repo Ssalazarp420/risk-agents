@@ -1,0 +1,21 @@
+{
+  "modelo": "openai/gpt-oss-120b",
+  "por_estado": {
+    "completo": 23,
+    "sin_datos": 1,
+    "omitido": 1
+  },
+  "por_nivel": {
+    "medio": 6,
+    "bajo": 13,
+    "alto": 4
+  },
+  "investigados_en_esta_corrida": 23,
+  "tokens_entrada": 245259,
+  "tokens_salida": 38999,
+  "costo_usd": null,
+  "segundos": 117.5,
+  "alertas_del_lote": [
+    "Jugadores con score en el rango de los casos del corte 2026-10-31 que no están en casos_del_dia.csv: J100146 (0.958), J100563 (0.91)."
+  ]
+}
