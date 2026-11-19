@@ -160,3 +160,11 @@ class TestCodeAlerts:
     def test_normal_cases_get_no_alerts(self, by_id):
         assert by_id["C-20261101-009"] == []
         assert by_id["C-20261101-007"] == []
+
+
+def test_the_baseline_only_asks_for_what_was_not_preloaded(repo, paths):
+    batch(repo, RuleBasedLLM(), paths, only={"C-20261101-016"})
+    (trace,) = lines(paths["traces"])
+    asked = [e["nombre"] for e in trace["eventos"] if e["tipo"] == "herramienta"]
+    assert asked == ["cuentas_relacionadas", "resumen_transacciones", "resumen_apuestas", "bonos"]
+    assert trace["pasos"] == 2

@@ -9,6 +9,7 @@ import pytest
 from risk_agents.agent import (
     CONCLUDE_SPEC,
     MAX_STEPS,
+    PRELOADED_TOOLS,
     SYSTEM_PROMPT,
     build_context,
     run_agent,
@@ -50,6 +51,8 @@ def box_for(repo, cases):
 
 
 def run(box, *replies, **kwargs):
+    """Loop mechanics are tested without preloading; TestPreload covers the default."""
+    kwargs.setdefault("preload", ())
     llm = ScriptedLLM(list(replies))
     return run_agent(llm, box, "contexto del caso", **kwargs), llm
 
@@ -98,6 +101,38 @@ class TestHappyPath:
         )
         tool_result = json.loads(llm.calls[1]["messages"][-1]["content"])
         assert any(n["parece_instruccion"] for n in tool_result["notas"]["items"])
+
+
+class TestPreload:
+    def test_the_first_call_already_has_the_three_basic_results(self, box_for):
+        llm = ScriptedLLM([conclude()])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto del caso")
+        messages = llm.calls[0]["messages"]
+        assert messages[2]["role"] == "assistant"
+        assert [c["function"]["name"] for c in messages[2]["tool_calls"]] == list(PRELOADED_TOOLS)
+        tool_messages = messages[3:]
+        assert [m["tool_call_id"] for m in tool_messages] == [
+            c["id"] for c in messages[2]["tool_calls"]
+        ]
+        assert "D-88436f9197" in tool_messages[0]["content"]
+        assert result.steps == 1  # preloading is not a model call
+
+    def test_preloaded_accounts_count_as_seen(self, box_for):
+        llm = ScriptedLLM([conclude()])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto del caso")
+        assert result.related_seen == frozenset({"J100146", "J100563", "J101084"})
+
+    def test_the_trace_marks_them_as_preloaded(self, box_for):
+        llm = ScriptedLLM([conclude()])
+        result = run_agent(llm, box_for("C-20261101-016"), "contexto del caso")
+        tools = [e for e in result.trace if e["tipo"] == "herramienta"]
+        assert [e["nombre"] for e in tools] == list(PRELOADED_TOOLS)
+        assert all(e["precargada"] for e in tools)
+
+    def test_the_prompt_says_they_are_already_there(self):
+        for name in PRELOADED_TOOLS:
+            assert name in SYSTEM_PROMPT
+        assert "ya" in SYSTEM_PROMPT and "precarg" in SYSTEM_PROMPT
 
 
 class TestRecoverableMistakes:

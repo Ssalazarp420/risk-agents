@@ -252,3 +252,25 @@ El enunciado pide: *"Si algo del enunciado no está claro, toma un supuesto razo
 - **Agregar líneas sin reescribir el archivo:** al reanudar, el orden ya no sería el del CSV.
 
 **Costo de la decisión.** Las alertas del código y las del agente pueden decir lo mismo con otras palabras. Se acepta: es mejor una alerta repetida que una ausente.
+
+---
+
+## D-015
+
+**El código precarga las tres herramientas que se usan en todos los casos** · 2026-11-18 · Vigente
+
+**Contexto.** En la primera corrida real, el modelo pidió las herramientas de a una, aunque el prompt le pedía pedirlas juntas. Cada paso reenvía toda la conversación, y el plan gratuito de Groq limita los tokens por minuto: hubo reintentos de hasta 80 s ([caso de fallo 5](casos_de_fallo.md#5-latencias-de-hasta-80-s-por-el-límite-de-tasa-de-groq)).
+
+**Opción elegida.** Antes de la primera llamada al modelo, el código ejecuta `cuentas_relacionadas`, `resumen_transacciones` y `resumen_apuestas` del jugador del caso. Los resultados entran al historial con el mismo formato que si el modelo los hubiera pedido: un mensaje `assistant` con las llamadas y sus resultados `tool`. En la traza quedan marcados como `precargada`. El prompt dice que ya están y que no hay que pedirlos otra vez. El modelo sigue decidiendo si pide `bonos`, `detalle_transacciones` o las herramientas de las cuentas relacionadas.
+
+**Por qué.** Esas tres herramientas se usan en el 100 % de los casos, así que pedirlas no requiere criterio, solo gasta pasos. Con el mismo formato de mensajes, el modelo no necesita instrucciones nuevas, y la línea base de reglas funciona igual.
+
+**Medición** (Groq, `openai/gpt-oss-120b`; una corrida por caso, así que es indicativa; la evaluación la repite):
+
+| Caso | Sin precarga | Con precarga |
+|---|---|---|
+| 011 | 4 pasos, 13.557 tokens de entrada, 0,0030 USD; 6 pasos, 25.572 tokens, 0,0058 USD | 2 pasos, 8.914 tokens, 0,0025 USD |
+| 016 | — | 3 pasos, 13.192 tokens, 0,0031 USD |
+| 025 | — | 1 paso, 3.745 tokens, 0,0013 USD |
+
+**Costo de la decisión.** Se pagan las tres herramientas aunque un caso no las necesitara. Son consultas locales de milisegundos y salidas de pocos miles de caracteres.

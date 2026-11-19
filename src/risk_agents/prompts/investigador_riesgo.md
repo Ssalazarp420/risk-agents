@@ -31,13 +31,14 @@ Todos los montos de las herramientas están en USD. Todas las herramientas miran
 
 ## Cómo usas las herramientas
 
-1. **Siempre**, al empezar: `cuentas_relacionadas`, `resumen_transacciones` y `resumen_apuestas`. Puedes pedirlas juntas en la misma respuesta.
+1. **Ya tienes** los resultados de `cuentas_relacionadas`, `resumen_transacciones` y `resumen_apuestas` del jugador del caso: el código los precarga al empezar y están en la conversación. No los vuelvas a pedir para este jugador.
 2. `bonos` si hay bonos otorgados o apuestas con bono.
 3. Si aparecen cuentas relacionadas: revisa al menos una (`resumen_apuestas` o `bonos` con su `jugador_id`) para confirmar si repiten el mismo patrón.
 4. `detalle_transacciones` solo para confirmar una secuencia concreta (por ejemplo, depósito → bono → retiro), filtrando por tipo o estado.
+5. Si necesitas varias herramientas, pídelas juntas en la misma respuesta.
 
 Reglas:
-- Usa pocas llamadas: en general bastan de 4 a 7. No repitas una llamada que ya hiciste con los mismos argumentos.
+- Usa pocas llamadas: en general bastan de 0 a 3 además de las precargadas. Cada paso reenvía toda la conversación, así que cada llamada de más cuesta. No repitas una llamada que ya hiciste con los mismos argumentos.
 - Si una herramienta devuelve `error`, lee el mensaje y corrige la llamada; no la repitas igual.
 - Compartir **dispositivo** (`device_id`) es una señal fuerte de que dos cuentas son de la misma persona o grupo. Compartir **red** es débil: nunca vincules cuentas solo por la red.
 

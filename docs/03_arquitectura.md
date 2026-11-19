@@ -99,6 +99,7 @@ Cada componente explica **qué es**, **para qué sirve** y **cómo se usa aquí*
 - **Para qué sirve.** Es la parte que reemplaza el criterio del analista: decidir qué mirar, conectar las señales y explicar.
 - **Cómo se usa aquí.**
   - **Contexto inicial armado por el código** (`build_context`): ids del caso y ventana, perfil sin datos personales, score con sus factores en este corte y en el anterior, las métricas de 90 días y las alertas de la prevalidación. Así el modelo no gasta pasos en lo obvio.
+  - **Herramientas precargadas** ([D-015](decisiones.md#d-015)). Antes del primer paso, el código ejecuta `cuentas_relacionadas`, `resumen_transacciones` y `resumen_apuestas` y las pone en el historial como si el modelo las hubiera pedido. El modelo decide qué más pedir.
   - **Conclusión como llamada a herramienta.** El modelo termina llamando a `concluir`, cuyos parámetros son un JSON Schema con los campos que le tocan: `hallazgos` (1 a 5, con evidencia), `nivel_preocupacion`, `derivar_a`, `resumen` (máximo 800), `cuentas_relacionadas` y `alertas_calidad_datos`. Si la conclusión no cumple el esquema, vuelve al modelo con los errores, igual que una herramienta mal llamada.
   - **Si responde con texto** en vez de llamar a `concluir`, recibe un recordatorio.
   - **Límites.** Máximo 10 llamadas al modelo por caso. Si las agota, si la salida se corta por el tope de tokens o si ocurre cualquier excepción (el proveedor falla después de los reintentos, o un defecto del código), el caso queda `incompleto` con el motivo. Un caso nunca detiene la corrida.

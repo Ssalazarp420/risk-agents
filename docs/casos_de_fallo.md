@@ -17,6 +17,7 @@ Cada caso queda con evidencia verificable (salida real, traza o reporte).
 | 3 | 2026-11-18 | Análisis | La documentación de datos usó días posteriores al corte (97 en vez de 88) |
 | 4 | 2026-11-18 | Agente | El modelo repite una alerta que el prompt le pide no repetir |
 | 5 | 2026-11-18 | Proveedor | Latencias de hasta 80 s por reintentos del límite de tasa de Groq |
+| 6 | 2026-11-18 | Agente | En el caso 025 el modelo no ve la señal de juego responsable y valida un factor del score que no cuadra |
 
 ---
 
@@ -134,6 +135,32 @@ LLM 6  5788 tokens de entrada   23102 ms  reintentos 1
 **Cómo se mide.** Tokens de entrada, pasos y reintentos por caso en `trazas.jsonl`, antes y después del cambio.
 
 **Lección.** Con un proveedor limitado por tokens por minuto, el costo de un agente está en el historial que se reenvía, no en la respuesta.
+
+---
+
+## 6. El caso 025: sin señal de juego responsable y con un factor del score mal leído
+
+**Situación.** Corrida real con precarga ([D-015](decisiones.md#d-015)), caso 025 (J101220): 49.196 apuestas en la ventana, hasta 599 en un día, 88 días activos, 0 apuestas entre las 0 y las 5 h, y un score con el factor `actividad_nocturna`.
+
+**Qué pasó.** El modelo concluyó en un solo paso `medio · riesgo`, sin `juego_responsable` y sin alertas:
+
+```
+"...con casi la mitad de la actividad en la franja nocturna (18-23h), lo que activa los factores de riesgo del modelo. [...] no hay evidencia clara de fraude o daño al jugador."
+```
+
+La línea base de reglas sí marca `alto · juego_responsable` y la alerta del factor nocturno.
+
+**Causa (hipótesis).**
+- El modelo no tiene una referencia de qué es "extremo". 49.196 apuestas no le dicen nada sin saber que la cuenta que le sigue tiene 1.002.
+- Leyó la franja "noche 18-23" como la actividad nocturna del factor. El prompt da el ejemplo de madrugada, pero la definición de "nocturno" es ambigua (ya se anotó en [T8](02_datos.md#t8--factores-del-score-que-no-cuadran)).
+
+**Cómo se detectó.** Lectura del expediente contra la hipótesis de [02_datos.md](02_datos.md#6-perfil-de-cada-caso) y contra la línea base.
+
+**Mitigación.** Pendiente, en el paso de evaluación. No se corrige el prompt a partir de una sola muestra: se mide con 3 corridas, se prueba el cambio y se vuelve a medir. Candidato: que el código agregue al contexto en qué percentil está el jugador en volumen y en apuestas por día, de modo que el código calcule y el modelo juzgue.
+
+**Cómo se mide.** Nivel y derivación del caso 025 en las 3 corridas de la evaluación, antes y después del cambio.
+
+**Lección.** Un modelo juzga bien patrones que tienen forma (bono → cuota baja → retiro) y mal magnitudes sin referencia. La referencia la tiene que dar el código.
 
 ---
 
