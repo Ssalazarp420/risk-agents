@@ -35,6 +35,10 @@ SYSTEM_PROMPT = PROMPT_PATH.read_text(encoding="utf-8")
 # and its re-sent history saved per tool (failure case 5, D-015).
 PRELOADED_TOOLS = ("cuentas_relacionadas", "resumen_transacciones", "resumen_apuestas")
 
+# A value is extreme for this operator at 10 times the 99th percentile or more. Chosen from the
+# distribution of this data (D-017): 025 is at 703x, the VIP at 5.8x, ordinary players below 1x.
+EXTREME_TIMES_P99 = 10
+
 # Model calls per case. The prompt asks for 4 to 7 tool calls; tools can be asked in parallel,
 # so 10 model calls leave room for a correction or two without letting a loop run up the bill.
 MAX_STEPS = 10
@@ -187,6 +191,8 @@ def _scale(case: Case, repo: Repository, metrics) -> dict[str, Any] | None:
             # How many times the 99th percentile: the population is skewed (most players bet
             # little), so a high percentile alone is not extreme (evaluation run v2).
             "veces_p99": round(value / p99, 1) if p99 else None,
+            # The code applies the threshold: the model ignored it in some runs (failure case 9).
+            "extremo": bool(p99) and value / p99 >= EXTREME_TIMES_P99,
             "maximo": round(dist[-1], 2) if dist else None,
             "jugadores": len(dist),
         }
@@ -235,7 +241,7 @@ def run_agent(
                 # Groq checks tool arguments against the schema on its side and answers 400
                 # instead of returning the call (failure case 7). Treat it like a wrong tool
                 # call: tell the model and let it fix the call on the next step.
-                if "tool call validation failed" not in str(e):
+                if not _is_rejected_tool_call(e):
                     raise
                 run.record_rejected(str(e))
                 messages.append({"role": "user", "content": REJECTED_CALL.format(error=e)})
@@ -339,6 +345,16 @@ class _Run:
             trace=self.trace,
             error=error,
         )
+
+
+def _is_rejected_tool_call(e: BadRequestError) -> bool:
+    """Groq answers 400 when the model writes a tool call it cannot accept: arguments that break
+    the schema, arguments that are not JSON, or a tool that does not exist (failure case 7)."""
+    text = str(e).lower()
+    return getattr(e, "code", None) == "tool_use_failed" or any(
+        marker in text
+        for marker in ("tool call validation failed", "failed to parse tool call arguments")
+    )
 
 
 def _tool_message(call_id: str, output: dict) -> Message:
